@@ -17,19 +17,29 @@ async function buscarTodos(client, tabela, colunas) {
 
 export async function baixarDoServidor({ client, store, fila }) {
   if (!client) throw new Error('Supabase não configurado.');
-  const [sessoes, participantes] = await Promise.all([
+  const [sessoes, participantes, sorteios, equipes, membros] = await Promise.all([
     buscarTodos(client, 'sessoes', 'id, data_referencia, status, encerrada_em, created_at, updated_at'),
     buscarTodos(client, 'participantes', 'id, sessao_id, nome, nota, created_at, updated_at'),
+    buscarTodos(client, 'sorteios', 'id, sessao_id, numero, jogadores_por_equipe, qtd_equipes, confirmado_em, created_at'),
+    buscarTodos(client, 'equipes', 'id, sessao_id, sorteio_id, nome, cor, ordem, created_at'),
+    buscarTodos(client, 'equipe_participantes', 'id, sessao_id, sorteio_id, equipe_id, participante_id, created_at'),
   ]);
   const pendentes = await fila.registrosPendentes();
   let gravados = 0;
-  await store.transacao([STORES.SESSOES, STORES.PARTICIPANTES], (h) => {
-    for (const s of sessoes) {
-      if (!pendentes.has(s.id)) { h[STORES.SESSOES].put(s); gravados++; }
-    }
-    for (const p of participantes) {
-      if (!pendentes.has(p.id)) { h[STORES.PARTICIPANTES].put({ ...p, nota: Number(p.nota) }); gravados++; }
+  const lotes = [
+    [STORES.SESSOES, sessoes, (x) => x.id],
+    [STORES.PARTICIPANTES, participantes.map((p) => ({ ...p, nota: Number(p.nota) })), (x) => x.id],
+    // Sorteios e suas equipes são enviados juntos, identificados pelo id do sorteio.
+    [STORES.SORTEIOS, sorteios, (x) => x.id],
+    [STORES.EQUIPES, equipes, (x) => x.sorteio_id],
+    [STORES.EQUIPE_PARTICIPANTES, membros, (x) => x.sorteio_id],
+  ];
+  await store.transacao(lotes.map(([nome]) => nome), (h) => {
+    for (const [nome, linhas, chave] of lotes) {
+      for (const linha of linhas) {
+        if (!pendentes.has(chave(linha)) && !pendentes.has(linha.id)) { h[nome].put(linha); gravados++; }
+      }
     }
   });
-  return { sessoes: sessoes.length, participantes: participantes.length, gravados };
+  return { sessoes: sessoes.length, participantes: participantes.length, sorteios: sorteios.length, gravados };
 }
