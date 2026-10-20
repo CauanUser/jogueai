@@ -11,6 +11,11 @@ on:
 permissions:
   contents: read
 
+# Vários envios seguidos: só o mais recente é compilado.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   testes:
     runs-on: ubuntu-24.04
