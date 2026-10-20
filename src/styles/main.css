@@ -238,3 +238,47 @@ a { color: var(--verde); }
 @media (prefers-reduced-motion: reduce) {
   * { animation: none !important; transition: none !important; }
 }
+
+/* Sorteio e times ------------------------------------------------- */
+.stepper { display: flex; align-items: center; justify-content: space-between; gap: .5rem; margin: .4rem 0; }
+.stepper .rotulo-campo { margin: 0; }
+.stepper-controles { display: flex; align-items: center; gap: .5rem; }
+.stepper-btn {
+  width: var(--alvo); height: var(--alvo); border-radius: 12px; border: 2px solid var(--verde);
+  background: var(--superficie); color: var(--verde); font: inherit; font-size: 1.6rem; font-weight: 800; cursor: pointer;
+}
+.stepper-btn:disabled { opacity: .35; cursor: not-allowed; }
+.stepper-valor { min-width: 2.5ch; text-align: center; font-size: 1.5rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+.btn-link { align-self: flex-end; background: none; border: 0; color: var(--verde); font: inherit; font-weight: 700; text-decoration: underline; padding: .3rem 0; cursor: pointer; }
+.resumo-config { font-weight: 700; margin: .75rem 0 .25rem; }
+
+.grupo-radio { border: 0; padding: 0; margin: .5rem 0; display: flex; flex-direction: column; gap: 8px; }
+.opcao-radio {
+  display: flex; align-items: center; gap: .75rem; min-height: var(--alvo); padding: 10px 12px;
+  border: 2px solid var(--borda); border-radius: 12px; cursor: pointer;
+}
+.opcao-radio:has(input:checked) { border-color: var(--verde); background: var(--verde-claro); }
+.opcao-radio input { width: 22px; height: 22px; accent-color: var(--verde); flex: none; }
+.opcao-radio span { display: flex; flex-direction: column; }
+.opcao-radio .texto-suave { font-size: .88rem; }
+
+.resultado-sorteio { scroll-margin-top: 80px; }
+.equilibrio { padding: 12px 14px; border-radius: 12px; background: var(--alerta-claro); margin-bottom: 12px; }
+.equilibrio-ok { background: var(--verde-claro); }
+.grade-equipes { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; margin-bottom: 12px; }
+.equipe {
+  background: var(--superficie); border: 1px solid var(--borda); border-left: 8px solid var(--cor-equipe, var(--borda));
+  border-radius: 12px; padding: 12px 14px; box-shadow: var(--sombra);
+}
+.equipe-espera { border-left-style: dashed; }
+.equipe-topo { display: flex; align-items: center; gap: .5rem; margin-bottom: .4rem; }
+.equipe-topo h3 { margin: 0; font-size: 1.15rem; flex: 1; }
+.equipe-cor { width: 14px; height: 14px; border-radius: 50%; background: var(--cor-equipe); border: 1px solid rgb(0 0 0 / 25%); }
+.equipe-soma { font-weight: 800; font-variant-numeric: tabular-nums; color: var(--texto-suave); }
+.equipe-jogadores { list-style: none; margin: 0; padding: 0; }
+.equipe-jogadores li { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-top: 1px solid var(--borda); font-weight: 600; }
+.nota-pequena { width: 32px; height: 32px; font-size: .95rem; }
+.chip-time {
+  display: inline-block; margin-left: .4rem; padding: 0 .5rem; border-radius: 999px; font-size: .78rem; font-weight: 700;
+  border: 2px solid var(--cor-equipe); color: var(--texto); vertical-align: middle;
+}
