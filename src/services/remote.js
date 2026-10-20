@@ -1,6 +1,6 @@
 // Adaptador que envia operações da fila ao Supabase, com timeout.
 
-const TABELAS_PERMITIDAS = new Set(['sessoes', 'participantes']);
+const TABELAS_PERMITIDAS = new Set(['sessoes', 'participantes', 'sorteios', 'equipes', 'equipe_participantes']);
 
 const MENSAGENS_PG = {
   '23505': 'O servidor recusou um registro duplicado (por exemplo, nome repetido na sessão).',
