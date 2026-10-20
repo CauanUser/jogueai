@@ -4,14 +4,20 @@
 // na MESMA transação: ou os dois ficam salvos, ou nenhum.
 
 export const NOME_BANCO = 'jogueai';
-export const VERSAO_BANCO = 1;
+export const VERSAO_BANCO = 2;
 
 export const STORES = Object.freeze({
   SESSOES: 'sessoes',
   PARTICIPANTES: 'participantes',
   OUTBOX: 'outbox',
   META: 'meta',
+  SORTEIOS: 'sorteios',
+  EQUIPES: 'equipes',
+  EQUIPE_PARTICIPANTES: 'equipe_participantes',
 });
+
+// Stores indexados por sessão (criados nas versões 1 e 2 do banco local).
+const POR_SESSAO = [STORES.PARTICIPANTES, STORES.SORTEIOS, STORES.EQUIPES, STORES.EQUIPE_PARTICIPANTES];
 
 function promessa(req) {
   return new Promise((resolve, reject) => {
@@ -29,9 +35,11 @@ export function abrirBanco({ nome = NOME_BANCO, idb = globalThis.indexedDB } = {
       if (!db.objectStoreNames.contains(STORES.SESSOES)) {
         db.createObjectStore(STORES.SESSOES, { keyPath: 'id' });
       }
-      if (!db.objectStoreNames.contains(STORES.PARTICIPANTES)) {
-        const s = db.createObjectStore(STORES.PARTICIPANTES, { keyPath: 'id' });
-        s.createIndex('sessao_id', 'sessao_id');
+      for (const nome of POR_SESSAO) {
+        if (!db.objectStoreNames.contains(nome)) {
+          const s = db.createObjectStore(nome, { keyPath: 'id' });
+          s.createIndex('sessao_id', 'sessao_id');
+        }
       }
       if (!db.objectStoreNames.contains(STORES.OUTBOX)) {
         const s = db.createObjectStore(STORES.OUTBOX, { keyPath: 'seq', autoIncrement: true });
@@ -108,7 +116,7 @@ export function enfileirar(outbox, { tabela, acao, registroId, dados = null }) {
     tabela,
     acao, // 'upsert' | 'delete'
     registroId,
-    dados,
+    dados, // objeto ou lista de objetos (upsert em lote)
     criadoEm: new Date().toISOString(),
     tentativas: 0,
     status: 'pendente', // 'pendente' | 'erro'
