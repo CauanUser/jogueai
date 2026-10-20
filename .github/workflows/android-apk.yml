@@ -1,5 +1,5 @@
 # Testa o projeto e compila o APK de depuração a cada push na branch main.
-# O APK fica disponível na aba "Actions" → execução → "Artifacts".
+# O APK fica disponível em "Releases" e em Actions → execução → "Artifacts".
 name: Testes e APK
 
 on:
@@ -15,8 +15,8 @@ jobs:
   testes:
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: npm
@@ -29,9 +29,11 @@ jobs:
   apk:
     needs: testes
     runs-on: ubuntu-24.04
+    permissions:
+      contents: write # necessário para publicar o APK em Releases
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: npm
@@ -52,8 +54,20 @@ jobs:
         working-directory: android
         # chmod: arquivos enviados pelo Windows perdem a permissão de execução
         run: chmod +x gradlew && ./gradlew assembleDebug --no-daemon
+      - name: Renomear APK
+        run: cp android/app/build/outputs/apk/debug/app-debug.apk JogueAI-build-${{ github.run_number }}.apk
       - uses: actions/upload-artifact@v4
         with:
           name: jogueai-debug-apk
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          path: JogueAI-build-${{ github.run_number }}.apk
           retention-days: 30
+      # Publica o APK na página "Releases" (fácil de baixar pelo celular).
+      - name: Publicar em Releases
+        if: github.event_name != 'pull_request'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: build-${{ github.run_number }}
+          name: JogueAI — build ${{ github.run_number }}
+          make_latest: true
+          body: APK de teste gerado automaticamente a partir do commit ${{ github.sha }}.
+          files: JogueAI-build-${{ github.run_number }}.apk
