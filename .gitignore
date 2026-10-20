@@ -1,0 +1,21 @@
+node_modules/
+dist/
+.env
+.env.local
+.env.*.local
+*.log
+.DS_Store
+.idea/
+.vscode/
+# Android (gerado/compilado)
+android/app/build/
+android/build/
+android/.gradle/
+android/local.properties
+android/app/src/main/assets/public/
+android/capacitor-cordova-android-plugins/
+*.apk
+*.aab
+*.jks
+*.keystore
+.tmp-pg/
