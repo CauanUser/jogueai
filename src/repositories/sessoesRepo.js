@@ -80,9 +80,10 @@ export function criarSessoesRepo({ store, aoGravar = () => {} }) {
 
     /** Exclui a sessão e tudo o que pertence a ela (no aparelho e no servidor). */
     async excluir(id) {
-      const participantes = await store.listarPorIndice(STORES.PARTICIPANTES, 'sessao_id', id);
-      await store.transacao([STORES.SESSOES, STORES.PARTICIPANTES, STORES.OUTBOX], (h) => {
-        for (const p of participantes) h[STORES.PARTICIPANTES].delete(p.id);
+      const filhos = [STORES.PARTICIPANTES, STORES.SORTEIOS, STORES.EQUIPES, STORES.EQUIPE_PARTICIPANTES];
+      const registros = await Promise.all(filhos.map((st) => store.listarPorIndice(st, 'sessao_id', id)));
+      await store.transacao([STORES.SESSOES, ...filhos, STORES.OUTBOX], (h) => {
+        filhos.forEach((st, i) => registros[i].forEach((r) => h[st].delete(r.id)));
         h[STORES.SESSOES].delete(id);
         enfileirar(h[STORES.OUTBOX], { tabela: 'sessoes', acao: 'delete', registroId: id });
       });
