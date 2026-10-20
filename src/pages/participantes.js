@@ -91,10 +91,15 @@ export async function render(el, { id }, ctx) {
       : 'Esta sessão não teve participantes cadastrados.'));
 
   async function atualizarLista() {
-    const [participantes, pendentes] = await Promise.all([
+    const [participantes, pendentes, sorteioAtual] = await Promise.all([
       ctx.participantes.listarPorSessao(id),
       ctx.fila.registrosPendentes(),
+      ctx.sorteios.atual(id),
     ]);
+    // Em qual time (do sorteio atual) cada participante está.
+    const timeDe = new Map();
+    for (const e of sorteioAtual?.equipes ?? []) for (const j of e.jogadores) timeDe.set(j.id, e);
+    atualizarAcoesSorteio(participantes.length, Boolean(sorteioAtual));
     const r = resumoParticipantes(participantes);
     resumo.textContent = r.total
       ? `${r.total} jogador(es) · soma das notas ${r.somaNotas} · média ${r.media.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}`
@@ -131,6 +136,9 @@ export async function render(el, { id }, ctx) {
       return h('li', { class: 'item-participante' },
         h('span', { class: 'ordem', 'aria-hidden': 'true' }, String(i + 1)),
         h('span', { class: 'item-nome' }, p.nome,
+          timeDe.has(p.id)
+            ? h('span', { class: 'chip-time', style: `--cor-equipe: ${timeDe.get(p.id).cor}` }, timeDe.get(p.id).nome)
+            : null,
           pendentes.has(p.id) ? h('span', { class: 'pendente', title: 'Aguardando envio ao servidor' }, ' • pendente') : null),
         h('span', { class: 'nota', 'aria-label': `nota ${p.nota}` }, String(p.nota)),
         acoes);
@@ -165,6 +173,19 @@ export async function render(el, { id }, ctx) {
   }
 
   el.append(h('section', { 'aria-label': 'Lista de participantes' }, resumo, lista, vazio));
+
+  // Próximo passo: sorteio / times
+  const areaSorteio = h('section', { class: 'acoes acoes-coluna', 'aria-label': 'Times' });
+  el.append(areaSorteio);
+  function atualizarAcoesSorteio(total, temSorteio) {
+    const itens = [];
+    if (temSorteio) itens.push(h('a', { class: 'btn btn-primario btn-grande', href: `#/sessao/${id}/equipes` }, 'Ver times'));
+    if (editavel && total >= 2) {
+      itens.push(h('a', { class: `btn ${temSorteio ? 'btn-secundario' : 'btn-primario btn-grande'}`, href: `#/sessao/${id}/sorteio` },
+        temSorteio ? 'Novo sorteio' : 'Sortear times'));
+    }
+    areaSorteio.replaceChildren(...itens);
+  }
 
   // Ações da sessão
   const btnEstado = h('button', { class: 'btn btn-secundario', type: 'button' },
