@@ -1,0 +1,59 @@
+# Testa o projeto e compila o APK de depuração a cada push na branch main.
+# O APK fica disponível na aba "Actions" → execução → "Artifacts".
+name: Testes e APK
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  testes:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Testes de regras de negócio e dados
+        run: npm test
+      - name: Testes do banco (PostgreSQL local)
+        run: npm run test:db
+
+  apk:
+    needs: testes
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: gradle
+      - run: npm ci
+      - name: Build web + sincronizar Android
+        env:
+          # Configure em Settings → Secrets and variables → Actions.
+          # Apenas a URL e a chave PUBLICÁVEL; nunca a service_role.
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
+        run: npm run android:sync
+      - name: Compilar APK de depuração
+        working-directory: android
+        # chmod: arquivos enviados pelo Windows perdem a permissão de execução
+        run: chmod +x gradlew && ./gradlew assembleDebug --no-daemon
+      - uses: actions/upload-artifact@v4
+        with:
+          name: jogueai-debug-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 30
