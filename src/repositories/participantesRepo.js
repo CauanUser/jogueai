@@ -22,6 +22,11 @@ export function criarParticipantesRepo({ store, aoGravar = () => {} }) {
     return sessao;
   };
 
+  const emEquipe = async (p) => {
+    const membros = await store.listarPorIndice(STORES.EQUIPE_PARTICIPANTES, 'sessao_id', p.sessao_id);
+    return membros.some((m) => m.participante_id === p.id);
+  };
+
   const gravar = async (p) => {
     await store.transacao([STORES.PARTICIPANTES, STORES.OUTBOX], (h) => {
       h[STORES.PARTICIPANTES].put(p);
@@ -34,6 +39,12 @@ export function criarParticipantesRepo({ store, aoGravar = () => {} }) {
   };
 
   const repo = {
+    /** Participante está em alguma equipe confirmada? (nota e remoção ficam travadas) */
+    emEquipe: async (id) => {
+      const p = await store.obter(STORES.PARTICIPANTES, id);
+      return p ? emEquipe(p) : false;
+    },
+
     /** Participantes da sessão em ordem de chegada (ordem de cadastro). */
     async listarPorSessao(sessaoId) {
       const lista = await store.listarPorIndice(STORES.PARTICIPANTES, 'sessao_id', sessaoId);
@@ -56,6 +67,11 @@ export function criarParticipantesRepo({ store, aoGravar = () => {} }) {
       const existentes = await repo.listarPorSessao(atual.sessao_id);
       const v = validarParticipante(dados, existentes, id);
       if (!v.ok) throw new ErroDeNegocio('Dados inválidos.', { erros: v.erros });
+      if (v.valor.nota !== Number(atual.nota) && await emEquipe(atual)) {
+        throw new ErroDeNegocio('Dados inválidos.', {
+          erros: { nota: 'A nota não pode mudar depois que os times foram confirmados (o nome pode).' },
+        });
+      }
       return gravar({ ...atual, ...v.valor, updated_at: new Date().toISOString() });
     },
 
@@ -63,6 +79,9 @@ export function criarParticipantesRepo({ store, aoGravar = () => {} }) {
       const atual = await store.obter(STORES.PARTICIPANTES, id);
       if (!atual) return;
       await exigirSessaoEditavel(atual.sessao_id);
+      if (await emEquipe(atual)) {
+        throw new ErroDeNegocio(`${atual.nome} já está em um time confirmado e não pode ser removido(a).`);
+      }
       await store.transacao([STORES.PARTICIPANTES, STORES.OUTBOX], (h) => {
         h[STORES.PARTICIPANTES].delete(id);
         enfileirar(h[STORES.OUTBOX], { tabela: 'participantes', acao: 'delete', registroId: id });
