@@ -14,6 +14,7 @@ export async function render(el, _params, ctx) {
   for (const p of todosParticipantes) contagem.set(p.sessao_id, (contagem.get(p.sessao_id) ?? 0) + 1);
 
   const ativa = sessoes.find((s) => s.status === STATUS_SESSAO.EM_ANDAMENTO);
+  const sorteioAtivo = ativa ? await ctx.sorteios.atual(ativa.id) : null;
   const anteriores = sessoes.filter((s) => s !== ativa);
 
   el.append(h('section', { class: 'boas-vindas' },
@@ -42,7 +43,10 @@ export async function render(el, _params, ctx) {
       h('h2', { id: 'tit-ativa' }, formatarDataReferencia(ativa.data_referencia)),
       h('p', {}, n === 1 ? '1 participante' : `${n} participantes`),
       h('div', { class: 'acoes acoes-coluna' },
-        h('a', { class: 'btn btn-primario btn-grande', href: `#/sessao/${ativa.id}` }, 'Participantes'),
+        sorteioAtivo
+          ? h('a', { class: 'btn btn-primario btn-grande', href: `#/sessao/${ativa.id}/equipes` }, 'Times')
+          : null,
+        h('a', { class: `btn ${sorteioAtivo ? 'btn-secundario' : 'btn-primario btn-grande'}`, href: `#/sessao/${ativa.id}` }, 'Participantes'),
         btnEncerrar)));
   } else {
     el.append(h('section', { class: 'cartao estado-vazio' },
