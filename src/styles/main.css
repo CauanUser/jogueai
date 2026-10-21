@@ -309,3 +309,40 @@ a { color: var(--verde); }
 .item-importacao-linha { display: flex; align-items: center; gap: 6px; }
 .item-importacao-linha::before { counter-increment: imp; content: counter(imp); min-width: 1.6rem; color: var(--texto-suave); font-weight: 700; }
 .item-importacao .erro-campo { margin-left: 1.9rem; min-height: 0; }
+
+/* Partidas ---------------------------------------------------------- */
+.escolha-equipes { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; }
+.equipe-opcao {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 12px; min-height: 72px;
+  border: 2px solid var(--borda); border-left: 8px solid var(--cor-equipe); border-radius: 12px;
+  background: var(--superficie); color: var(--texto); font: inherit; text-align: left; cursor: pointer;
+}
+.equipe-opcao[aria-pressed='true'] { border-color: var(--verde); border-left-color: var(--cor-equipe); background: var(--verde-claro); }
+.equipe-opcao .equipe-cor { display: none; }
+.equipe-opcao-nome { font-weight: 800; font-size: 1.1rem; }
+.equipe-opcao-lado { font-size: .85rem; font-weight: 700; color: var(--texto-suave); }
+.equipe-opcao[aria-pressed='true'] .equipe-opcao-lado { color: var(--verde); }
+.chips-rapidos { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 .5rem; }
+.chip-botao { min-height: 40px; padding: 0 14px; border-radius: 999px; border: 2px solid var(--borda); background: var(--superficie); color: var(--texto); font: inherit; font-weight: 700; cursor: pointer; }
+.opcao-check { display: flex; align-items: center; gap: .75rem; min-height: var(--alvo); margin-top: .5rem; font-weight: 600; }
+.opcao-check input { width: 22px; height: 22px; accent-color: var(--verde); }
+
+.placar { text-align: center; padding: 16px 12px; }
+.placar-linha { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 8px; }
+.placar-lado { display: flex; flex-direction: column; align-items: center; gap: 6px; font-weight: 800; font-size: 1.05rem; overflow-wrap: anywhere; }
+.placar-lado .equipe-cor { width: 22px; height: 22px; }
+.placar-numeros { font-size: 3rem; font-weight: 900; font-variant-numeric: tabular-nums; letter-spacing: .02em; }
+.relogio { font-size: clamp(4rem, 22vw, 7rem); font-weight: 900; line-height: 1; margin-top: 12px; font-variant-numeric: tabular-nums; color: var(--texto); }
+.relogio-parado { opacity: .55; }
+.relogio-final { color: var(--perigo-forte); }
+.relogio-rotulo { color: var(--texto-suave); font-weight: 700; margin-top: 2px; }
+.status-partida { font-weight: 800; color: var(--verde); margin: 8px 0 0; }
+.controles-partida { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
+.btn-gigante { min-height: 76px; font-size: 1.35rem; width: 100%; }
+.fim-jogo { border: 2px solid var(--verde); }
+.escalacoes summary { font-weight: 800; cursor: pointer; min-height: 32px; }
+.escalacoes-grade { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 8px; }
+.escalacao h3 { font-size: 1rem; margin: 0 0 4px; border-left: 6px solid var(--cor-equipe); padding-left: 6px; }
+.escalacao ul { list-style: none; margin: 0; padding: 0; }
+.escalacao li { padding: 3px 0; }
+.btn-partida { background: var(--perigo-forte); color: #fff; }
