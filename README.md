@@ -42,7 +42,7 @@ android/               projeto nativo gerado pelo Capacitor
 ## 1. Configurar o Supabase (plano gratuito)
 
 1. Crie um projeto em <https://supabase.com> (plano Free).
-2. **Banco:** abra *SQL Editor*, cole o conteúdo de `supabase/migrations/20261020000001_esquema_inicial.sql` e execute.
+2. **Banco:** abra *SQL Editor* e execute, **em ordem**, cada arquivo de `supabase/migrations/` (`20261020000001_esquema_inicial.sql`, depois `20261021000001_nota_opcional_importacao.sql`). Ao atualizar o app, execute apenas as migrações novas.
    (Ou, com a Supabase CLI: `supabase link` e `supabase db push`.)
 3. **Conta do organizador:** *Authentication → Users → Add user → Create new user*, informe e-mail e senha e marque **Auto Confirm User**.
 4. **Bloquear novos cadastros:** *Authentication → Sign In / Providers* → desative **Allow new users to sign up**. Assim ninguém mais consegue criar conta.
@@ -113,7 +113,8 @@ Será configurada na fase final (assinatura com keystore própria, que **não** 
 | Fase | Conteúdo | Situação |
 |---|---|---|
 | 1 | Estrutura, banco + RLS, login, armazenamento local e sincronização, sessões e participantes | ✅ |
-| 2 | Sorteio equilibrado + telas de sorteio e equipes/fila de espera | — |
+| 2 | Sorteio equilibrado + telas de sorteio e equipes/fila de espera | ✅ |
+| 2.1 | Importação da lista do WhatsApp (nomes de uma vez, notas preenchidas na lista) | ✅ |
 | 3 | Configuração de partida, cronômetro, partida ao vivo | — |
 | 4 | Gols, gol contra, correção, encerramento automático, pênaltis, confirmação | — |
 | 5 | Artilharia, histórico, detalhes da sessão, correção de partidas antigas | — |
