@@ -17,12 +17,14 @@ async function buscarTodos(client, tabela, colunas) {
 
 export async function baixarDoServidor({ client, store, fila }) {
   if (!client) throw new Error('Supabase não configurado.');
-  const [sessoes, participantes, sorteios, equipes, membros] = await Promise.all([
+  const [sessoes, participantes, sorteios, equipes, membros, partidas, escalacoes] = await Promise.all([
     buscarTodos(client, 'sessoes', 'id, data_referencia, status, encerrada_em, created_at, updated_at'),
     buscarTodos(client, 'participantes', 'id, sessao_id, nome, nota, created_at, updated_at'),
     buscarTodos(client, 'sorteios', 'id, sessao_id, numero, jogadores_por_equipe, qtd_equipes, confirmado_em, created_at'),
     buscarTodos(client, 'equipes', 'id, sessao_id, sorteio_id, nome, cor, ordem, created_at'),
     buscarTodos(client, 'equipe_participantes', 'id, sessao_id, sorteio_id, equipe_id, participante_id, created_at'),
+    buscarTodos(client, 'partidas', '*'),
+    buscarTodos(client, 'partida_escalacoes', 'id, sessao_id, partida_id, participante_id, lado, created_at'),
   ]);
   const pendentes = await fila.registrosPendentes();
   let gravados = 0;
@@ -33,6 +35,8 @@ export async function baixarDoServidor({ client, store, fila }) {
     [STORES.SORTEIOS, sorteios, (x) => x.id],
     [STORES.EQUIPES, equipes, (x) => x.sorteio_id],
     [STORES.EQUIPE_PARTICIPANTES, membros, (x) => x.sorteio_id],
+    [STORES.PARTIDAS, partidas.map(({ owner_id: _o, ...p }) => ({ ...p, relogio_acumulado_ms: Number(p.relogio_acumulado_ms) })), (x) => x.id],
+    [STORES.PARTIDA_ESCALACOES, escalacoes, (x) => x.partida_id],
   ];
   await store.transacao(lotes.map(([nome]) => nome), (h) => {
     for (const [nome, linhas, chave] of lotes) {
@@ -41,5 +45,5 @@ export async function baixarDoServidor({ client, store, fila }) {
       }
     }
   });
-  return { sessoes: sessoes.length, participantes: participantes.length, sorteios: sorteios.length, gravados };
+  return { sessoes: sessoes.length, participantes: participantes.length, sorteios: sorteios.length, partidas: partidas.length, gravados };
 }
