@@ -388,3 +388,6 @@ button.item-gol { cursor: pointer; }
 .aviso-confirmacao { background: var(--alerta-claro); color: var(--alerta); padding: 10px 12px; border-radius: 10px; font-weight: 700; }
 .fim-jogo { display: flex; flex-direction: column; gap: 8px; }
 .fim-confirmado { background: var(--verde-claro); }
+
+/* JogueAI brand palette override */
+:root{--verde:#B9FF50;--verde-escuro:#91D92F;--verde-claro:#20301D;--amarelo:#B9FF50;--fundo:#031D27;--superficie:#092832;--texto:#F7FAF8;--texto-suave:#B2C3C7;--borda:#24434B;--sobre-verde:#031D27;--topo:#031D27;color-scheme:dark}body{background:var(--fundo);color:var(--texto)}.cartao{background:var(--superficie);border-color:var(--borda)}.marca strong,.rotulo,.nav-item[aria-current='page']{color:var(--verde)}.btn-primario{background:var(--verde);color:#031D27}
