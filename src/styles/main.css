@@ -346,3 +346,45 @@ a { color: var(--verde); }
 .escalacao ul { list-style: none; margin: 0; padding: 0; }
 .escalacao li { padding: 3px 0; }
 .btn-partida { background: var(--perigo-forte); color: #fff; }
+
+/* Gols e resultado ---------------------------------------------------- */
+.chip-alerta { background: var(--alerta-claro); color: var(--alerta); margin-left: 6px; }
+.botoes-gol { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+.botoes-gol:empty { display: none; }
+.btn-gol {
+  min-height: 84px; flex-direction: column; gap: 4px; font-size: 1.15rem; font-weight: 900;
+  background: var(--superficie); color: var(--texto); border: 3px solid var(--cor-equipe);
+  box-shadow: inset 0 -8px 0 var(--cor-equipe); overflow-wrap: anywhere;
+}
+.btn-gol .icone { width: 28px; height: 28px; }
+.botoes-gol-correcao .btn-gol { min-height: 56px; font-size: 1rem; box-shadow: none; }
+.placar-penaltis { font-weight: 800; color: var(--texto-suave); min-height: 0; }
+.placar-penaltis:empty { display: none; }
+.lista-gols { list-style: none; margin: 0; padding: 0; }
+.item-gol {
+  display: flex; align-items: center; gap: 10px; width: 100%; min-height: var(--alvo); padding: 8px 4px;
+  border: 0; border-bottom: 1px solid var(--borda); background: none; color: var(--texto); font: inherit; text-align: left;
+}
+button.item-gol { cursor: pointer; }
+.item-gol .equipe-cor { width: 14px; height: 14px; border-radius: 50%; background: var(--cor-equipe); flex: none; }
+.item-gol .icone { margin-left: auto; color: var(--texto-suave); flex: none; }
+.gol-minuto { font-weight: 900; min-width: 2.6rem; font-variant-numeric: tabular-nums; }
+.gol-texto { overflow-wrap: anywhere; }
+.seletor-gol h2 { border-left: 8px solid var(--cor-equipe); padding-left: 8px; }
+.grade-autores { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; margin: 8px 0 12px; }
+.opcao-autor {
+  min-height: 56px; padding: 8px 10px; border-radius: 12px; border: 2px solid var(--cor-equipe);
+  background: var(--superficie); color: var(--texto); font: inherit; font-weight: 800; font-size: 1.05rem; cursor: pointer; overflow-wrap: anywhere;
+}
+.opcao-autor-neutra { border-color: var(--borda); font-weight: 600; grid-column: 1 / -1; }
+.opcao-autor-contra { border-color: var(--alerta); }
+.opcao-autor-atual { background: var(--verde-claro); border-color: var(--verde); }
+.gol-contra summary { font-weight: 800; cursor: pointer; min-height: 40px; display: flex; align-items: center; color: var(--alerta); }
+.penaltis { border-top: 1px solid var(--borda); margin-top: 12px; padding-top: 8px; display: flex; flex-direction: column; gap: 8px; }
+.penaltis h3 { margin: 0; }
+.penaltis-grade { display: grid; grid-template-columns: 1fr; gap: 6px; }
+.resultado-linha { font-size: 1.15rem; font-weight: 800; margin: 4px 0; }
+.resultado-vencedor { font-weight: 700; color: var(--verde); margin: 0 0 4px; }
+.aviso-confirmacao { background: var(--alerta-claro); color: var(--alerta); padding: 10px 12px; border-radius: 10px; font-weight: 700; }
+.fim-jogo { display: flex; flex-direction: column; gap: 8px; }
+.fim-confirmado { background: var(--verde-claro); }
