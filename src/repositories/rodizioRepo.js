@@ -8,9 +8,11 @@ import { payloadMembro } from './sorteiosRepo.js';
 const isoAgora = () => new Date().toISOString();
 const payloadEvento = (e) => ({
   id: e.id, sessao_id: e.sessao_id, partida_id: e.partida_id, sorteio_id: e.sorteio_id,
-  equipe_id: e.equipe_id ?? null, participante_saiu_id: e.participante_saiu_id ?? null,
+  equipe_id: e.equipe_id ?? null, equipe_origem_id: e.equipe_origem_id ?? null,
+  participante_saiu_id: e.participante_saiu_id ?? null,
   participante_entrou_id: e.participante_entrou_id ?? null, tipo: e.tipo,
-  formacao_antes: e.formacao_antes ?? null, formacao_depois: e.formacao_depois ?? null, created_at: e.created_at,
+  formacao_antes: e.formacao_antes ?? null, formacao_depois: e.formacao_depois ?? null,
+  corrigida: e.corrigida ?? false, corrigida_em: e.corrigida_em ?? null, created_at: e.created_at,
 });
 
 export function criarRodizioRepo({ store, sorteios, partidas, aoGravar = () => {} }) {
@@ -51,6 +53,7 @@ export function criarRodizioRepo({ store, sorteios, partidas, aoGravar = () => {
     // A última saída da fila define a nova posição; uma entrada posterior apaga essa marca.
     const aguardandoDesde = new Map();
     for (const evento of eventos) {
+      if (evento.corrigida) continue;
       if (evento.participante_entrou_id) aguardandoDesde.delete(evento.participante_entrou_id);
       if (evento.participante_saiu_id) aguardandoDesde.set(evento.participante_saiu_id, evento.created_at);
     }
@@ -93,7 +96,8 @@ export function criarRodizioRepo({ store, sorteios, partidas, aoGravar = () => {
       };
       const evento = {
         id: novoId(), sessao_id: sessaoId, partida_id: partidaId, sorteio_id: st.atual.sorteio.id,
-        equipe_id: st.equipePerdedora.id, participante_saiu_id: participanteSaiId,
+        equipe_id: st.equipePerdedora.id, equipe_origem_id: membroEntra?.equipe_id ?? null,
+        participante_saiu_id: participanteSaiId,
         participante_entrou_id: participanteEntraId, tipo: 'substituicao',
         formacao_antes: {
           vencedora: st.equipeVencedora.jogadores.map((p) => p.id),
@@ -120,6 +124,47 @@ export function criarRodizioRepo({ store, sorteios, partidas, aoGravar = () => {
       });
     },
 
+    corrigirUltima(sessaoId, partidaId) {
+      return emSerie(partidaId, async () => {
+        const st = await estado(sessaoId, partidaId);
+        const ultima = [...st.eventos].reverse().find((e) => e.tipo === 'substituicao' && !e.corrigida);
+        if (!ultima) throw new ErroDeNegocio('Não há substituição para corrigir nesta partida.');
+
+        const membros = await store.listarPorIndice(STORES.EQUIPE_PARTICIPANTES, 'sessao_id', sessaoId);
+        const atual = membros.filter((m) => m.sorteio_id === st.atual.sorteio.id);
+        const membroEntrou = atual.find((m) => m.participante_id === ultima.participante_entrou_id);
+        const membroSaiu = atual.find((m) => m.participante_id === ultima.participante_saiu_id);
+        if (!membroEntrou || membroEntrou.equipe_id !== ultima.equipe_id || membroSaiu) {
+          throw new ErroDeNegocio('A formação mudou desde a substituição. Não é seguro desfazer automaticamente.');
+        }
+        const agora = isoAgora();
+        const restaurarSaiu = {
+          id: novoId(), sessao_id: sessaoId, sorteio_id: st.atual.sorteio.id,
+          equipe_id: ultima.equipe_id, participante_id: ultima.participante_saiu_id, created_at: agora,
+        };
+        const restaurarEntrou = ultima.equipe_origem_id ? {
+          id: novoId(), sessao_id: sessaoId, sorteio_id: st.atual.sorteio.id,
+          equipe_id: ultima.equipe_origem_id, participante_id: ultima.participante_entrou_id, created_at: agora,
+        } : null;
+        const corrigida = { ...ultima, corrigida: true, corrigida_em: agora };
+        const terminal = st.eventos.find((e) => ['sem_substituicao', 'encerrado'].includes(e.tipo));
+        await store.transacao([STORES.EQUIPE_PARTICIPANTES, STORES.OUTBOX, STORES.RODIZIO], (h) => {
+          h[STORES.EQUIPE_PARTICIPANTES].delete(membroEntrou.id);
+          h[STORES.EQUIPE_PARTICIPANTES].put(restaurarSaiu);
+          if (restaurarEntrou) h[STORES.EQUIPE_PARTICIPANTES].put(restaurarEntrou);
+          h[STORES.RODIZIO].put(corrigida);
+          if (terminal) h[STORES.RODIZIO].delete(terminal.id);
+          enfileirar(h[STORES.OUTBOX], { tabela: 'equipe_participantes', acao: 'delete', registroId: membroEntrou.id });
+          enfileirar(h[STORES.OUTBOX], { tabela: 'equipe_participantes', acao: 'upsert', registroId: restaurarSaiu.id, dados: payloadMembro(restaurarSaiu) });
+          if (restaurarEntrou) enfileirar(h[STORES.OUTBOX], { tabela: 'equipe_participantes', acao: 'upsert', registroId: restaurarEntrou.id, dados: payloadMembro(restaurarEntrou) });
+          enfileirar(h[STORES.OUTBOX], { tabela: 'rodizio_eventos', acao: 'upsert', registroId: corrigida.id, dados: payloadEvento(corrigida) });
+          if (terminal) enfileirar(h[STORES.OUTBOX], { tabela: 'rodizio_eventos', acao: 'delete', registroId: terminal.id });
+        });
+        aoGravar();
+        return corrigida;
+      });
+    },
+
     continuarSemSubstituicao(sessaoId, partidaId) {
       return emSerie(partidaId, async () => {
       const st = await estado(sessaoId, partidaId);
@@ -128,7 +173,8 @@ export function criarRodizioRepo({ store, sorteios, partidas, aoGravar = () => {
       const evento = {
         id: partidaId, sessao_id: sessaoId, partida_id: partidaId, sorteio_id: st.atual.sorteio.id,
         equipe_id: null, participante_saiu_id: null, participante_entrou_id: null,
-        tipo, formacao_antes: null, formacao_depois: null, created_at: isoAgora(),
+        tipo, equipe_origem_id: null, formacao_antes: null, formacao_depois: null,
+        corrigida: false, corrigida_em: null, created_at: isoAgora(),
       };
       await store.transacao([STORES.RODIZIO, STORES.OUTBOX], (h) => {
         h[STORES.RODIZIO].put(evento);
