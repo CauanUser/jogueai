@@ -33,8 +33,10 @@ describe('regras de sessão', () => {
   });
 
   it('resume participantes', () => {
-    expect(resumoParticipantes([{ nota: 7 }, { nota: 5 }])).toEqual({ total: 2, somaNotas: 12, media: 6 });
+    expect(resumoParticipantes([{ nota: 7 }, { nota: 5 }])).toEqual({ total: 2, somaNotas: 12, media: 6, semNota: 0 });
     expect(resumoParticipantes([]).media).toBe(0);
+    // importados ainda sem nota não entram na soma nem na média
+    expect(resumoParticipantes([{ nota: 8 }, { nota: null }, { nota: null }])).toEqual({ total: 3, somaNotas: 8, media: 8, semNota: 2 });
   });
 });
 
