@@ -43,7 +43,7 @@ export function criarRodizioRepo({ store, sorteios, partidas, aoGravar = () => {
       .sort((a, b) => String(a.created_at ?? '').localeCompare(String(b.created_at ?? '')));
     const eventos = await eventosDaSessao(sessaoId);
     const eventosPartida = eventos.filter((e) => e.partida_id === partidaId);
-    const encerradoSemTroca = eventosPartida.some((e) => e.tipo === 'sem_substituicao');
+    const encerradoSemTroca = eventosPartida.some((e) => ['sem_substituicao', 'encerrado'].includes(e.tipo));
     return { partida, placar: pl, ladoVencedor, equipeVencedora, equipePerdedora, atual: { ...atual, aguardando }, eventos: eventosPartida, encerradoSemTroca };
   }
 
@@ -94,11 +94,12 @@ export function criarRodizioRepo({ store, sorteios, partidas, aoGravar = () => {
 
     async continuarSemSubstituicao(sessaoId, partidaId) {
       const st = await estado(sessaoId, partidaId);
-      if (st.eventos.length) throw new ErroDeNegocio('Já existe uma alteração de rodízio registrada para esta partida.');
+      if (st.encerradoSemTroca) throw new ErroDeNegocio('O rodízio desta partida já foi concluído.');
+      const tipo = st.eventos.some((e) => e.tipo === 'substituicao') ? 'encerrado' : 'sem_substituicao';
       const evento = {
         id: novoId(), sessao_id: sessaoId, partida_id: partidaId, sorteio_id: st.atual.sorteio.id,
         equipe_id: null, participante_saiu_id: null, participante_entrou_id: null,
-        tipo: 'sem_substituicao', created_at: isoAgora(),
+        tipo, created_at: isoAgora(),
       };
       await store.transacao([STORES.RODIZIO, STORES.OUTBOX], (h) => {
         h[STORES.RODIZIO].put(evento);
