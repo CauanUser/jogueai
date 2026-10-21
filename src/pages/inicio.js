@@ -15,6 +15,12 @@ export async function render(el, _params, ctx) {
 
   const ativa = sessoes.find((s) => s.status === STATUS_SESSAO.EM_ANDAMENTO);
   const sorteioAtivo = ativa ? await ctx.sorteios.atual(ativa.id) : null;
+  let partidaEmCurso = ativa ? await ctx.partidas.ativa(ativa.id) : null;
+  if (partidaEmCurso) {
+    // Se o tempo acabou com o app fechado, registra o fim agora (no instante correto).
+    await ctx.partidas.aplicarEventoAutomatico(partidaEmCurso.id).catch(() => null);
+    partidaEmCurso = await ctx.partidas.ativa(ativa.id);
+  }
   const anteriores = sessoes.filter((s) => s !== ativa);
 
   el.append(h('section', { class: 'boas-vindas' },
@@ -43,8 +49,11 @@ export async function render(el, _params, ctx) {
       h('h2', { id: 'tit-ativa' }, formatarDataReferencia(ativa.data_referencia)),
       h('p', {}, n === 1 ? '1 participante' : `${n} participantes`),
       h('div', { class: 'acoes acoes-coluna' },
+        partidaEmCurso
+          ? h('a', { class: 'btn btn-primario btn-grande btn-partida', href: `#/partida/${partidaEmCurso.id}` }, `Partida nº ${partidaEmCurso.numero} em andamento`)
+          : null,
         sorteioAtivo
-          ? h('a', { class: 'btn btn-primario btn-grande', href: `#/sessao/${ativa.id}/equipes` }, 'Times')
+          ? h('a', { class: `btn ${partidaEmCurso ? 'btn-secundario' : 'btn-primario btn-grande'}`, href: `#/sessao/${ativa.id}/equipes` }, 'Times e partidas')
           : null,
         h('a', { class: `btn ${sorteioAtivo ? 'btn-secundario' : 'btn-primario btn-grande'}`, href: `#/sessao/${ativa.id}` }, 'Participantes'),
         btnEncerrar)));
