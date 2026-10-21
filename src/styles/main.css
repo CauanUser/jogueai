@@ -434,3 +434,151 @@ h2 { font-size:1.4rem; font-weight:750; }
 @media (prefers-reduced-motion:reduce) {
   *,*::before,*::after { scroll-behavior:auto!important; animation-duration:.01ms!important; animation-iteration-count:1!important; transition-duration:.01ms!important; }
 }
+
+/* Identidade JogueAI — hierarquia de telas e experiência mobile */
+:root {
+  --verde: #B9FF50;
+  --verde-escuro: #91D92F;
+  --verde-claro: #203820;
+  --amarelo: #B9FF50;
+  --fundo: #031D27;
+  --superficie: #092832;
+  --texto: #F7FAF8;
+  --texto-suave: #B2C3C7;
+  --borda: #24434B;
+  --perigo: #FF8585;
+  --perigo-claro: #3A2025;
+  --alerta: #FFD166;
+  --alerta-claro: #3A321D;
+  --info: #83D7FF;
+  --raio: 16px;
+  --sombra: 0 2px 4px rgb(0 0 0 / 18%), 0 8px 24px rgb(0 0 0 / 16%);
+  --sobre-verde: #031D27;
+  --topo: #031D27;
+  --perigo-forte: #D94848;
+  --alvo: 52px;
+  color-scheme: dark;
+}
+body {
+  font-family: Inter, Roboto, 'Segoe UI', system-ui, sans-serif;
+  background-image: radial-gradient(ellipse at top right, rgb(185 255 80 / 5%), transparent 42%);
+}
+h1,h2,h3,.marca,.rotulo,.titulo-secao,.placar-numeros,.relogio {
+  font-family: 'Barlow Condensed', 'Roboto Condensed', 'Arial Narrow', sans-serif;
+  letter-spacing: .015em;
+}
+h1 { font-size: clamp(1.85rem, 6vw, 2.35rem); font-weight: 800; line-height: 1.08; }
+h2 { font-size: 1.4rem; font-weight: 750; }
+.topo {
+  background: rgb(3 29 39 / 96%);
+  border-bottom: 1px solid var(--borda);
+  backdrop-filter: blur(12px);
+}
+.marca { font-weight: 800; letter-spacing: -.025em; }
+.marca strong { color: var(--verde); }
+.sync-ok::before { color: var(--verde); }
+.nav-inferior {
+  background: rgb(6 31 40 / 97%);
+  border-top-color: var(--borda);
+  backdrop-filter: blur(14px);
+}
+.nav-item { transition: color .15s ease; }
+.nav-item[aria-current='page'] { color: var(--verde); }
+.nav-item[aria-current='page'] .icone { filter: drop-shadow(0 0 5px rgb(185 255 80 / 18%)); }
+.cartao {
+  border-color: var(--borda);
+  background: linear-gradient(145deg, rgb(12 48 59 / 98%), rgb(7 35 45 / 98%));
+  box-shadow: var(--sombra);
+}
+.cartao-destaque {
+  border-color: var(--verde);
+  background: linear-gradient(145deg, #103640, #092832 72%);
+}
+.rotulo { color: var(--verde); letter-spacing: .09em; }
+.texto-suave { color: var(--texto-suave); }
+.btn { border-radius: 12px; font-weight: 750; }
+.btn-primario {
+  background: var(--verde);
+  border-color: var(--verde);
+  color: #031D27;
+  box-shadow: 0 3px 0 rgb(0 0 0 / 18%);
+}
+.btn-primario:hover { filter: brightness(1.06); }
+.btn-secundario { color: var(--verde); border-color: #6A963F; background: rgb(185 255 80 / 4%); }
+.btn-perigo { background: var(--perigo-forte); color: #fff; }
+.btn-icone:active { background: var(--verde-claro); }
+.campo {
+  background: #061F28;
+  color: var(--texto);
+  border-color: var(--borda);
+}
+.campo:focus { border-color: var(--verde); box-shadow: 0 0 0 3px rgb(185 255 80 / 12%); }
+.chip-ok { background: var(--verde-claro); color: var(--verde); }
+.chip-neutro { background: #183640; color: var(--texto); }
+.item-lista, .item-participante, .item-importacao-linha {
+  background-color: var(--superficie);
+}
+.item-lista { transition: border-color .15s ease, transform .12s ease; }
+.item-lista:active { transform: scale(.995); border-color: var(--verde); }
+.equipe {
+  background: linear-gradient(145deg, #0D303A, #08232D);
+  border-color: var(--borda);
+  border-left: 5px solid var(--cor-equipe, var(--borda));
+}
+.equipe-topo h3 { font-weight: 800; }
+.equipe-espera { background: #071F28; border-style: dashed; }
+.equipe-soma { color: var(--texto-suave); }
+.equipe-opcao { background: var(--superficie); }
+.equipe-opcao[aria-pressed='true'] {
+  background: var(--verde-claro);
+  border-color: var(--verde);
+}
+.nota-opcao[aria-checked='true'], .nota-select { background: var(--verde); color: #031D27; }
+.nota-select.nota-vazia, .nota.nota-vazia { background: var(--alerta-claro); color: var(--alerta); }
+.stepper-btn { border-color: #6A963F; color: var(--verde); }
+.opcao-radio:has(input:checked) { border-color: var(--verde); background: var(--verde-claro); }
+.opcao-radio input, .opcao-check input { accent-color: var(--verde); }
+.placar {
+  background: linear-gradient(145deg, #0D303A, #061F28);
+  border-color: #2C515A;
+  padding: 20px 14px;
+}
+.placar-numeros {
+  font-size: clamp(3.2rem, 14vw, 4.8rem);
+  font-weight: 900;
+  line-height: 1;
+  color: var(--verde);
+}
+.placar-lado { font-size: 1rem; }
+.relogio {
+  font-size: clamp(4.5rem, 23vw, 7rem);
+  font-weight: 900;
+  letter-spacing: .025em;
+  font-variant-numeric: tabular-nums;
+}
+.relogio-final { color: var(--perigo); }
+.status-partida { color: var(--verde); }
+.btn-gol { min-height: 64px; border-color: var(--cor-equipe); }
+.btn-gigante { min-height: 76px; }
+.fim-jogo { border-color: var(--verde); }
+.lista-gols-cartao { border-top: 3px solid var(--verde); }
+.dialogo { border: 1px solid var(--borda); }
+.toast { background: #17462F; color: #F7FAF8; }
+.toast-info { background: #183640; color: #F7FAF8; }
+:focus-visible { outline: 3px solid var(--verde); outline-offset: 3px; }
+@media (min-width: 700px) {
+  .pagina { padding-top: 24px; }
+  .grade-equipes { gap: 16px; }
+  .placar { padding: 24px; }
+}
+@media (max-width: 380px) {
+  .pagina { padding-left: 12px; padding-right: 12px; }
+  .topo { padding-left: 12px; padding-right: 12px; }
+  .placar { padding: 14px 8px; }
+  .placar-numeros { font-size: 2.8rem; }
+  .placar-lado { font-size: .9rem; }
+  .item-participante { grid-template-columns: 1.5rem minmax(0,1fr) auto; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+}
