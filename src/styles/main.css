@@ -592,3 +592,17 @@ body { background:var(--fundo); color:var(--texto); }
 .cartao { background:var(--superficie); border-color:var(--borda); }
 .marca strong,.rotulo,.nav-item[aria-current='page'] { color:var(--verde); }
 .btn-primario { background:var(--verde); color:#031D27; }
+
+
+/* Identidade JogueAI: símbolo compacto no cabeçalho e abertura animada. */
+.marca { display:flex; align-items:center; gap:9px; min-width:0; }
+.marca-simbolo { display:block; width:34px; height:34px; object-fit:contain; border-radius:9px; flex:none; }
+.marca-nome { color:#F7FAF8; font-family:'Barlow Condensed','Roboto Condensed','Arial Narrow',sans-serif; font-size:1.45rem; font-weight:800; letter-spacing:-.035em; line-height:1; }
+.marca-nome strong { color:#B9FF50; }
+.splash-inicial { position:fixed; inset:0; z-index:9999; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:30px; padding:28px; background:#031D27; opacity:1; transition:opacity .32s ease, visibility .32s ease; }
+.splash-logo { display:block; width:min(82vw, 420px); max-height:48vh; object-fit:contain; animation:splash-aparece .7s cubic-bezier(.2,.8,.2,1) both; }
+.splash-carregando { color:#B9FF50; font-family:Inter,Roboto,system-ui,sans-serif; font-size:.72rem; font-weight:800; letter-spacing:.22em; animation:splash-pulsa 1.2s ease-in-out infinite; }
+.splash-saindo { opacity:0; visibility:hidden; }
+@keyframes splash-aparece { from { opacity:0; transform:translateY(12px) scale(.97); } to { opacity:1; transform:translateY(0) scale(1); } }
+@keyframes splash-pulsa { 0%,100% { opacity:.45; } 50% { opacity:1; } }
+@media (prefers-reduced-motion: reduce) { .splash-logo,.splash-carregando { animation:none; } .splash-inicial { transition:none; } }
