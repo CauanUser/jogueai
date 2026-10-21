@@ -9,7 +9,7 @@ create table public.rodizio_eventos (
   equipe_id uuid,
   participante_saiu_id uuid,
   participante_entrou_id uuid,
-  tipo text not null check (tipo in ('substituicao', 'sem_substituicao')),
+  tipo text not null check (tipo in ('substituicao', 'sem_substituicao', 'encerrado')),
   created_at timestamptz not null default now(),
   constraint rodizio_sessao_fk foreign key (sessao_id, owner_id)
     references public.sessoes (id, owner_id) on delete cascade,
@@ -28,14 +28,14 @@ create table public.rodizio_eventos (
       and participante_saiu_id is not null and participante_entrou_id is not null
       and participante_saiu_id <> participante_entrou_id)
     or
-    (tipo = 'sem_substituicao' and equipe_id is null
+    (tipo in ('sem_substituicao', 'encerrado') and equipe_id is null
       and participante_saiu_id is null and participante_entrou_id is null)
   )
 );
 create index rodizio_eventos_sessao_idx on public.rodizio_eventos (sessao_id, created_at);
 create index rodizio_eventos_partida_idx on public.rodizio_eventos (partida_id);
 create unique index rodizio_sem_substituicao_unico
-  on public.rodizio_eventos (partida_id) where tipo = 'sem_substituicao';
+  on public.rodizio_eventos (partida_id) where tipo in ('sem_substituicao', 'encerrado');
 
 alter table public.rodizio_eventos enable row level security;
 revoke all on public.rodizio_eventos from anon, public;
