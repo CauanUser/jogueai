@@ -18,6 +18,7 @@ const ROTAS = [
   { padrao: /^\/sessao\/([0-9a-f-]{36})\/importar$/i, pagina: importarLista, nav: 'inicio', params: ['id'] },
   { padrao: /^\/sessao\/([0-9a-f-]{36})\/partida\/nova$/i, pagina: novaPartida, nav: 'inicio', params: ['id'] },
   { padrao: /^\/partida\/([0-9a-f-]{36})$/i, pagina: partida, nav: 'inicio', params: ['id'] },
+  { padrao: /^\/sessao\/([0-9a-f-]{36})\/rodizio$/i, pagina: rodizio, nav: 'inicio', params: ['id'] },
   { padrao: /^\/configuracoes$/, pagina: configuracoes, nav: 'config' },
 ];
 
