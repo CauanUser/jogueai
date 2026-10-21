@@ -47,11 +47,18 @@ export function criarRodizioRepo({ store, sorteios, partidas, aoGravar = () => {
       throw new ErroDeNegocio('As equipes desta partida não pertencem ao sorteio atual. Verifique se houve um novo sorteio.');
     }
     const participantes = await store.listarPorIndice(STORES.PARTICIPANTES, 'sessao_id', sessaoId);
+    const eventos = await eventosDaSessao(sessaoId);
+    // A última saída da fila define a nova posição; uma entrada posterior apaga essa marca.
+    const aguardandoDesde = new Map();
+    for (const evento of eventos) {
+      if (evento.participante_entrou_id) aguardandoDesde.delete(evento.participante_entrou_id);
+      if (evento.participante_saiu_id) aguardandoDesde.set(evento.participante_saiu_id, evento.created_at);
+    }
     const ativos = new Set([...equipeVencedora.jogadores, ...equipePerdedora.jogadores].map((p) => p.id));
     const aguardando = participantes
       .filter((p) => !ativos.has(p.id))
-      .sort((a, b) => String(a.created_at ?? '').localeCompare(String(b.created_at ?? '')));
-    const eventos = await eventosDaSessao(sessaoId);
+      .sort((a, b) => String(aguardandoDesde.get(a.id) ?? a.created_at ?? '')
+        .localeCompare(String(aguardandoDesde.get(b.id) ?? b.created_at ?? '')));
     const eventosPartida = eventos.filter((e) => e.partida_id === partidaId);
     const encerradoSemTroca = eventosPartida.some((e) => ['sem_substituicao', 'encerrado'].includes(e.tipo));
     return { partida, placar: pl, ladoVencedor, equipeVencedora, equipePerdedora, atual: { ...atual, aguardando }, eventos: eventosPartida, encerradoSemTroca };
