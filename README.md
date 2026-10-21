@@ -115,7 +115,7 @@ Será configurada na fase final (assinatura com keystore própria, que **não** 
 | 1 | Estrutura, banco + RLS, login, armazenamento local e sincronização, sessões e participantes | ✅ |
 | 2 | Sorteio equilibrado + telas de sorteio e equipes/fila de espera | ✅ |
 | 2.1 | Importação da lista do WhatsApp (nomes de uma vez, notas preenchidas na lista) | ✅ |
-| 3 | Configuração de partida, cronômetro, partida ao vivo | — |
+| 3 | Configuração de partida, cronômetro, partida ao vivo | ✅ |
 | 4 | Gols, gol contra, correção, encerramento automático, pênaltis, confirmação | — |
 | 5 | Artilharia, histórico, detalhes da sessão, correção de partidas antigas | — |
 | 6 | Robustez offline, configurações, APK assinado, documentação final | — |
