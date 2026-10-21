@@ -41,6 +41,7 @@ export async function render(el, { id }, ctx) {
   const nomeEquipe = new Map((await ctx.store.listarPorIndice('equipes', 'sessao_id', id)).map((e) => [e.id, e.nome]));
   if (editavel) {
     el.append(h('div', { class: 'acoes acoes-coluna' },
+      h('a', { class: 'btn btn-secundario', href: `#/sessao/${id}/rodizio` }, 'Rodízio de jogadores'),
       ativa
         ? h('a', { class: 'btn btn-primario btn-grande', href: `#/partida/${ativa.id}` }, `Ir para a partida nº ${ativa.numero}`)
         : h('a', { class: 'btn btn-primario btn-grande', href: `#/sessao/${id}/partida/nova` }, 'Nova partida')));
