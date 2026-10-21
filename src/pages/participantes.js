@@ -74,6 +74,7 @@ export async function render(el, { id }, ctx) {
     return;
   }
   const editavel = participantesEditaveis(sessao);
+  const configSessao = await ctx.store.obterMeta('sessao_config_' + id) ?? { modalidade: 'futebol', modo: 'racha' };
 
   const cabecalho = h('div', { class: 'cabecalho-pagina' },
     h('a', { class: 'btn-icone', href: '#/', 'aria-label': 'Voltar ao início' }, icone('voltar')),
@@ -185,6 +186,7 @@ export async function render(el, { id }, ctx) {
   }
 
   el.append(cabecalho);
+  if (editavel && configSessao.modo === 'partida') el.append(h('a', { class: 'btn btn-primario btn-grande', href: '#/sessao/' + id + '/times-manuais' }, 'Montar times manualmente'));
 
   if (editavel) {
     const campos = camposParticipante({ prefixo: 'novo' });
