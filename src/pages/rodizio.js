@@ -109,7 +109,7 @@ export async function render(el, { id, partidaId }, ctx) {
     }));
     elAcoes.replaceChildren(
       btnEncerrar,
-      h('a', { class: 'btn btn-primario btn-grande', href: `#/sessao/${id}/partida/nova` }, 'Preparar próxima partida'),
+      h('a', { class: 'btn btn-primario btn-grande', href: `#/sessao/${id}/partida/nova/${estado.equipeVencedora.id}/${estado.equipePerdedora.id}` }, 'Preparar próxima partida'),
       h('a', { class: 'btn btn-secundario', href: `#/sessao/${id}/equipes` }, 'Voltar aos times'));
   }
 
