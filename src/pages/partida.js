@@ -233,7 +233,10 @@ export async function render(el, { id }, ctx) {
       }));
     }
     partes.push(h('div', { class: 'acoes acoes-coluna' },
-      h('a', { class: `btn ${p.status === STATUS_PARTIDA.CONFIRMADA ? 'btn-primario btn-grande' : 'btn-secundario'}`, href: `#/sessao/${sessaoId}/partida/nova` }, 'Próxima partida'),
+      p.status === STATUS_PARTIDA.CONFIRMADA
+        ? h('a', { class: 'btn btn-primario btn-grande', href: `#/sessao/${sessaoId}/rodizio/${id}` }, 'Organizar rodízio')
+        : null,
+      h('a', { class: `btn ${p.status === STATUS_PARTIDA.CONFIRMADA ? 'btn-secundario' : 'btn-secundario'}`, href: `#/sessao/${sessaoId}/partida/nova` }, 'Próxima partida'),
       h('a', { class: 'btn btn-secundario', href: `#/sessao/${sessaoId}/equipes` }, 'Voltar aos times')));
     return h('section', { class: `cartao fim-jogo${p.status === STATUS_PARTIDA.CONFIRMADA ? ' fim-confirmado' : ''}` }, partes);
   }
