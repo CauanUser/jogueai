@@ -9,6 +9,7 @@ import { baixarDoServidor } from './services/pull.js';
 import { criarSessoesRepo } from './repositories/sessoesRepo.js';
 import { criarParticipantesRepo } from './repositories/participantesRepo.js';
 import { criarSorteiosRepo } from './repositories/sorteiosRepo.js';
+import { criarPartidasRepo } from './repositories/partidasRepo.js';
 
 export async function criarApp() {
   const store = await abrirBanco();
@@ -39,6 +40,7 @@ export async function criarApp() {
     sessoes: criarSessoesRepo({ store, aoGravar }),
     participantes: criarParticipantesRepo({ store, aoGravar }),
     sorteios: criarSorteiosRepo({ store, aoGravar }),
+    partidas: criarPartidasRepo({ store, aoGravar }),
     baixarDoServidor: () => baixarDoServidor({ client, store, fila }),
   };
 
