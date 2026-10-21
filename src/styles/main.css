@@ -282,3 +282,30 @@ a { color: var(--verde); }
   display: inline-block; margin-left: .4rem; padding: 0 .5rem; border-radius: 999px; font-size: .78rem; font-weight: 700;
   border: 2px solid var(--cor-equipe); color: var(--texto); vertical-align: middle;
 }
+
+/* Notas na lista e importação da lista do WhatsApp -------------------- */
+.nota-select {
+  min-width: 64px; height: 44px; padding: 0 8px; border-radius: 12px;
+  border: 2px solid var(--verde); background: var(--verde-claro); color: var(--verde);
+  font: inherit; font-size: 1.1rem; font-weight: 800; text-align: center; cursor: pointer;
+}
+.nota-select.nota-vazia, .nota.nota-vazia {
+  border: 2px dashed var(--alerta); background: var(--alerta-claro); color: var(--alerta);
+}
+.nota-select.nota-vazia { font-size: .95rem; }
+.aviso-notas { background: var(--alerta-claro); color: var(--alerta); font-weight: 700; padding: 10px 12px; border-radius: 12px; }
+.btn-importar { width: 100%; margin: -4px 0 16px; }
+
+.campo-lista { min-height: 260px; padding: 12px; font-size: 1rem; line-height: 1.5; resize: vertical; font-family: inherit; }
+.campo-compacto { min-height: 48px; font-size: 1.05rem; }
+.formulario .btn-secundario { margin-top: .5rem; }
+.resumo-importacao { display: flex; flex-wrap: wrap; gap: 6px; margin: .25rem 0 .75rem; }
+.resumo-importacao .chip { font-size: .9rem; padding: .2rem .7rem; }
+.aviso-importacao { background: var(--alerta-claro); border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; font-size: .95rem; }
+.aviso-importacao ul { margin: .3rem 0 0; padding-left: 1.2rem; }
+.aviso-importacao-erro { background: var(--perigo-claro); }
+.lista-importacao { counter-reset: imp; }
+.item-importacao { margin-bottom: 8px; }
+.item-importacao-linha { display: flex; align-items: center; gap: 6px; }
+.item-importacao-linha::before { counter-increment: imp; content: counter(imp); min-width: 1.6rem; color: var(--texto-suave); font-weight: 700; }
+.item-importacao .erro-campo { margin-left: 1.9rem; min-height: 0; }
