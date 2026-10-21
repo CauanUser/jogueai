@@ -8,6 +8,7 @@ import * as importarLista from './pages/importarLista.js';
 import * as novaPartida from './pages/novaPartida.js';
 import * as partida from './pages/partida.js';
 import * as rodizio from './pages/rodizio.js';
+import * as timesManuais from './pages/timesManuais.js';
 
 const ROTAS = [
   { padrao: /^\/$/, pagina: inicio, nav: 'inicio' },
