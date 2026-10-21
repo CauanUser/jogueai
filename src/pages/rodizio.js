@@ -49,11 +49,11 @@ export async function render(el, { id: sessaoId }, ctx) {
 
   const equipeVencedora = v === 'A' ? detalhe.equipeA : detalhe.equipeB;
   const equipePerdedora = v === 'A' ? detalhe.equipeB : detalhe.equipeA;
-  const ladoVencedor = v === 'A' ? 'A' : 'B';
-  const jogadoresVencedor = v === 'A' ? detalhe.jogadoresA : detalhe.jogadoresB;
-  const jogadoresPerdedor = v === 'A' ? detalhe.jogadoresB : detalhe.jogadoresA;
   const { equipes, aguardando } = atual;
+  const vencedoraAtual = equipes.find((e) => e.id === equipeVencedora.id);
   const perdedoraAtual = equipes.find((e) => e.id === equipePerdedora.id);
+  const jogadoresVencedor = vencedoraAtual?.jogadores ?? [];
+  const jogadoresPerdedor = perdedoraAtual?.jogadores ?? [];
   const fila = [...aguardando];
   let saidaId = '';
   let entradaId = '';
