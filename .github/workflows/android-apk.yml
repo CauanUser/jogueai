@@ -55,6 +55,10 @@ jobs:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
         run: npm run android:sync
+      - name: Gerar ícones Android da marca oficial
+        run: |
+          python -m pip install --quiet pillow
+          python scripts/gerar-icones-android.py
       - name: Compilar APK de depuração
         working-directory: android
         # chmod: arquivos enviados pelo Windows perdem a permissão de execução
