@@ -4,7 +4,7 @@ import { toast } from '../components/toast.js';
 import { stepper } from '../components/stepper.js';
 import { cartaoEquipe, cartaoAguardando } from '../components/cartaoEquipe.js';
 import { calcularConfiguracao, sortearEquipes, MAX_EQUIPES, MAX_POR_EQUIPE } from '../domain/sorteio.js';
-import { participantesEditaveis } from '../domain/sessao.js';
+import { participantesEditaveis, temNota } from '../domain/sessao.js';
 import { formatarDataReferencia } from '../utils/datas.js';
 
 const PADRAO_POR_EQUIPE = 5;
@@ -31,6 +31,8 @@ export async function render(el, { id }, ctx) {
 
   const participantes = await ctx.participantes.listarPorSessao(id);
   const porId = new Map(participantes.map((p) => [p.id, p]));
+  // Jogadores importados da lista podem ainda estar sem nota: o sorteio só libera com todas preenchidas.
+  const semNota = participantes.filter((p) => !temNota(p));
   const anterior = await ctx.sorteios.atual(id);
 
   const estado = {
@@ -90,8 +92,16 @@ export async function render(el, { id }, ctx) {
       erro.textContent = cfg.erro;
     }
     blocoEspera.hidden = !cfg.ok || cfg.aguardando === 0;
-    btnSortear.disabled = !cfg.ok;
-    return cfg;
+    btnSortear.disabled = !cfg.ok || semNota.length > 0;
+    return { ...cfg, ok: cfg.ok && semNota.length === 0 };
+  }
+
+  if (semNota.length) {
+    el.append(h('div', { class: 'cartao aviso', role: 'alert' },
+      h('p', {}, h('strong', {}, semNota.length === 1 ? '1 jogador está sem nota: ' : `${semNota.length} jogadores estão sem nota: `),
+        semNota.map((p) => p.nome).join(', '), '.'),
+      h('p', {}, 'Defina a nota de todos antes de sortear.'),
+      h('a', { class: 'btn btn-primario', href: `#/sessao/${id}` }, 'Definir notas')));
   }
 
   el.append(h('section', { class: 'cartao formulario', 'aria-label': 'Configuração do sorteio' },
