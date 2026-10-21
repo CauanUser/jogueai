@@ -20,8 +20,13 @@ export async function render(el, { id, partidaId }, ctx) {
   let entraId = '';
   const nomePorId = new Map([...estado.atual.equipes.flatMap((e) => e.jogadores), ...estado.atual.aguardando].map((p) => [p.id, p.nome]));
   const titulo = h('h1', {}, 'Rodízio de jogadores');
+  const nomeEquipeA = estado.atual.equipes.find((e) => e.id === estado.partida.equipe_a_id)?.nome ?? 'Time A';
+  const nomeEquipeB = estado.atual.equipes.find((e) => e.id === estado.partida.equipe_b_id)?.nome ?? 'Time B';
   const resultado = h('p', { class: 'resultado-linha' },
-    `Partida nº ${estado.partida.numero}: ${estado.equipeVencedora.nome} venceu ${estado.placar.a} × ${estado.placar.b}.`);
+    `Partida nº ${estado.partida.numero}: ${nomeEquipeA} ${estado.placar.a} × ${estado.placar.b} ${nomeEquipeB}. ${estado.equipeVencedora.nome} venceu.`,
+    estado.partida.penaltis_a !== null && estado.partida.penaltis_a !== undefined
+      ? h('span', { class: 'item-sub' }, ` Pênaltis: ${estado.partida.penaltis_a} × ${estado.partida.penaltis_b}.`)
+      : null);
   const resumo = h('p', { class: 'resultado-vencedor' }, `${estado.equipeVencedora.nome} permanece em campo.`);
   const elTimes = h('div');
   const elFila = h('div');
@@ -92,7 +97,7 @@ export async function render(el, { id, partidaId }, ctx) {
     elHistorico.replaceChildren(h('h2', {}, 'Substituições desta partida'),
       historicoItens.length ? h('ul', { class: 'lista' }, historicoItens) : h('p', { class: 'ajuda' }, 'Nenhuma substituição registrada ainda.'));
     const btnEncerrar = h('button', { class: 'btn btn-secundario btn-grande', type: 'button' },
-      estado.eventos.some((e) => e.tipo === 'substituicao') ? 'Concluir rodízio' : 'Continuar sem substituições');
+      estado.encerradoSemTroca ? 'Rodízio concluído' : estado.eventos.some((e) => e.tipo === 'substituicao') ? 'Concluir rodízio' : 'Continuar sem substituições');
     btnEncerrar.disabled = estado.encerradoSemTroca;
     btnEncerrar.addEventListener('click', () => comBotaoOcupado(btnEncerrar, async () => {
       const ok = await confirmar({
