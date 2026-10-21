@@ -66,6 +66,34 @@ export function criarSorteiosRepo({ store, aoGravar = () => {} }) {
       return { sorteio, equipes: lista, aguardando };
     },
 
+    /** Aplica uma troca manual do rodízio na composição atual, sem refazer o sorteio. */
+    async aplicarRodizio(sessaoId, { equipePerdedoraId, saiId, entraId }) {
+      const atual = await repo.atual(sessaoId);
+      if (!atual) throw new ErroDeNegocio('Não há times confirmados nesta sessão.');
+      const { sorteio, equipes, aguardando } = atual;
+      const perdedora = equipes.find((e) => e.id === equipePerdedoraId);
+      if (!perdedora) throw new ErroDeNegocio('Equipe perdedora não encontrada.');
+      if (!saiId || !entraId || saiId === entraId) throw new ErroDeNegocio('Selecione quem sai e quem entra.');
+      if (!perdedora.jogadores.some((p) => p.id === saiId)) throw new ErroDeNegocio('O jogador que sai precisa estar na equipe perdedora.');
+      if (!aguardando.some((p) => p.id === entraId)) throw new ErroDeNegocio('O jogador que entra precisa estar na fila de espera.');
+      const membros = await store.listarPorIndice(STORES.EQUIPE_PARTICIPANTES, 'sessao_id', sessaoId);
+      const membroSai = membros.find((m) => m.sorteio_id === sorteio.id && m.equipe_id === equipePerdedoraId && m.participante_id === saiId);
+      if (!membroSai) throw new ErroDeNegocio('Não foi possível localizar o vínculo do jogador que sai.');
+      const agora = agoraMonotonicoISO();
+      const membroEntra = {
+        id: novoId(), sessao_id: sessaoId, sorteio_id: sorteio.id,
+        equipe_id: equipePerdedoraId, participante_id: entraId, created_at: agora,
+      };
+      await store.transacao([STORES.EQUIPE_PARTICIPANTES, STORES.OUTBOX], (h) => {
+        h[STORES.EQUIPE_PARTICIPANTES].delete(membroSai.id);
+        h[STORES.EQUIPE_PARTICIPANTES].put(membroEntra);
+        enfileirar(h[STORES.OUTBOX], { tabela: 'equipe_participantes', acao: 'delete', registroId: membroSai.id });
+        enfileirar(h[STORES.OUTBOX], { tabela: 'equipe_participantes', acao: 'upsert', registroId: membroEntra.id, dados: payloadMembro(membroEntra) });
+      });
+      aoGravar();
+      return repo.detalhar(sorteio);
+    },
+
     /**
      * Confirma o resultado de um sorteio: grava sorteio, equipes e composição
      * de uma vez (no aparelho) e enfileira o envio na ordem certa.
