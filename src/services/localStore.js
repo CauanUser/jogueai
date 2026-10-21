@@ -4,7 +4,7 @@
 // na MESMA transação: ou os dois ficam salvos, ou nenhum.
 
 export const NOME_BANCO = 'jogueai';
-export const VERSAO_BANCO = 3;
+export const VERSAO_BANCO = 4;
 
 export const STORES = Object.freeze({
   SESSOES: 'sessoes',
@@ -16,12 +16,13 @@ export const STORES = Object.freeze({
   EQUIPE_PARTICIPANTES: 'equipe_participantes',
   PARTIDAS: 'partidas',
   PARTIDA_ESCALACOES: 'partida_escalacoes',
+  GOLS: 'gols',
 });
 
-// Stores indexados por sessão (criados nas versões 1, 2 e 3 do banco local).
+// Stores indexados por sessão (criados nas versões 1 a 4 do banco local).
 const POR_SESSAO = [
   STORES.PARTICIPANTES, STORES.SORTEIOS, STORES.EQUIPES, STORES.EQUIPE_PARTICIPANTES,
-  STORES.PARTIDAS, STORES.PARTIDA_ESCALACOES,
+  STORES.PARTIDAS, STORES.PARTIDA_ESCALACOES, STORES.GOLS,
 ];
 
 function promessa(req) {
