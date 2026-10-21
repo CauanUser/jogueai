@@ -1,14 +1,14 @@
 /* JogueAI — estilos base. Alto contraste para uso sob luz solar. */
 :root {
-  --verde: #0b5d33;
-  --verde-escuro: #08431f;
-  --verde-claro: #e3f4ea;
-  --amarelo: #ffc400;
-  --fundo: #f4f6f5;
+  --verde: #BCF95E;
+  --verde-escuro: #021A26;
+  --verde-claro: #e8f8d2;
+  --amarelo: #BCF95E;
+  --fundo: #FFFFFF;
   --superficie: #ffffff;
-  --texto: #0d1512;
-  --texto-suave: #4a5752;
-  --borda: #c9d3ce;
+  --texto: #021A26;
+  --texto-suave: #45565E;
+  --borda: #D7E0E3;
   --perigo: #b3261e;
   --perigo-claro: #fdecea;
   --alerta: #8a5a00;
@@ -17,8 +17,8 @@
   --raio: 14px;
   --sombra: 0 1px 2px rgb(0 0 0 / 8%), 0 4px 12px rgb(0 0 0 / 6%);
   --alvo: 52px;
-  --sobre-verde: #ffffff;
-  --topo: #0b5d33;
+  --sobre-verde: #021A26;
+  --topo: #021A26;
   --perigo-forte: #b3261e;
   color-scheme: light;
 }
@@ -30,15 +30,15 @@
     --texto: #f1f5f3;
     --texto-suave: #b4c1bb;
     --borda: #33423b;
-    --verde: #2fbf71;
-    --verde-escuro: #1f9a57;
-    --verde-claro: #183326;
+    --verde: #BCF95E;
+    --verde-escuro: #021A26;
+    --verde-claro: #233D2C;
     --perigo: #ff8a80;
     --perigo-claro: #3a1a18;
     --alerta: #ffd479;
     --alerta-claro: #3a2f12;
     --info: #8cc4ff;
-    --sobre-verde: #04220f;
+    --sobre-verde: #021A26;
     color-scheme: dark;
   }
 }
