@@ -4,7 +4,7 @@ import { toast } from '../components/toast.js';
 import { formatarHora } from '../utils/datas.js';
 import { STORES } from '../services/localStore.js';
 
-const NOMES_TABELA = { sessoes: 'Sessão', participantes: 'Participante', sorteios: 'Sorteio', equipes: 'Equipes do sorteio', equipe_participantes: 'Jogadores dos times', partidas: 'Partida', partida_escalacoes: 'Escalação da partida' };
+const NOMES_TABELA = { sessoes: 'Sessão', participantes: 'Participante', sorteios: 'Sorteio', equipes: 'Equipes do sorteio', equipe_participantes: 'Jogadores dos times', partidas: 'Partida', partida_escalacoes: 'Escalação da partida', gols: 'Gol' };
 const NOMES_ACAO = { upsert: 'salvar', delete: 'excluir' };
 
 function descreverOperacao(op) {
