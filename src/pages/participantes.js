@@ -3,7 +3,8 @@ import { confirmar, abrirDialogo } from '../components/dialogo.js';
 import { toast } from '../components/toast.js';
 import { seletorNota } from '../components/seletorNota.js';
 import { formatarDataReferencia } from '../utils/datas.js';
-import { participantesEditaveis, resumoParticipantes, STATUS_SESSAO } from '../domain/sessao.js';
+import { participantesEditaveis, resumoParticipantes, STATUS_SESSAO, temNota } from '../domain/sessao.js';
+import { NOTA_MIN, NOTA_MAX } from '../domain/validacao.js';
 import { NOME_MAX } from '../domain/validacao.js';
 
 const NOTA_INICIAL = 5;
@@ -90,6 +91,46 @@ export async function render(el, { id }, ctx) {
       ? 'Nenhum participante ainda. Adicione os jogadores presentes na ordem de chegada.'
       : 'Esta sessão não teve participantes cadastrados.'));
 
+  const avisoNotas = h('p', { class: 'aviso-notas', role: 'status' });
+  let atuais = [];
+
+  function atualizarResumo() {
+    const r = resumoParticipantes(atuais);
+    resumo.textContent = r.total
+      ? `${r.total} jogador(es) · soma das notas ${r.somaNotas} · média ${r.media.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}`
+      : '';
+    avisoNotas.hidden = r.semNota === 0;
+    avisoNotas.textContent = r.semNota === 1
+      ? '1 jogador ainda está sem nota. Escolha a nota na lista abaixo antes do sorteio.'
+      : `${r.semNota} jogadores ainda estão sem nota. Escolha a nota de cada um na lista abaixo antes do sorteio.`;
+  }
+
+  /** Nota editável direto na lista (rápido para preencher vários jogadores importados). */
+  function campoNota(p, travado) {
+    const vazia = !temNota(p);
+    if (!editavel || travado) {
+      return h('span', { class: `nota ${vazia ? 'nota-vazia' : ''}`, 'aria-label': vazia ? 'sem nota' : `nota ${p.nota}` },
+        vazia ? '—' : String(p.nota));
+    }
+    const opcoes = [h('option', { value: '', disabled: true }, 'Nota')];
+    for (let n = NOTA_MIN; n <= NOTA_MAX; n++) opcoes.push(h('option', { value: String(n) }, String(n)));
+    const sel = h('select', { class: `nota-select ${vazia ? 'nota-vazia' : ''}`, 'aria-label': `Nota de ${p.nome}` }, opcoes);
+    sel.value = vazia ? '' : String(p.nota);
+    sel.addEventListener('change', async () => {
+      const nota = Number(sel.value);
+      try {
+        await ctx.participantes.editar(p.id, { nome: p.nome, nota });
+        p.nota = nota;
+        sel.classList.remove('nota-vazia');
+        atualizarResumo();
+      } catch (e) {
+        toast(e.erros?.nota ?? e.message, 'erro');
+        sel.value = temNota(p) ? String(p.nota) : '';
+      }
+    });
+    return sel;
+  }
+
   async function atualizarLista() {
     const [participantes, pendentes, sorteioAtual] = await Promise.all([
       ctx.participantes.listarPorSessao(id),
@@ -100,11 +141,9 @@ export async function render(el, { id }, ctx) {
     const timeDe = new Map();
     for (const e of sorteioAtual?.equipes ?? []) for (const j of e.jogadores) timeDe.set(j.id, e);
     atualizarAcoesSorteio(participantes.length, Boolean(sorteioAtual));
-    const r = resumoParticipantes(participantes);
-    resumo.textContent = r.total
-      ? `${r.total} jogador(es) · soma das notas ${r.somaNotas} · média ${r.media.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}`
-      : '';
-    vazio.hidden = r.total > 0;
+    atuais = participantes;
+    atualizarResumo();
+    vazio.hidden = participantes.length > 0;
     lista.replaceChildren(...participantes.map((p, i) => {
       const acoes = editavel ? h('div', { class: 'item-acoes' },
         h('button', {
@@ -140,7 +179,7 @@ export async function render(el, { id }, ctx) {
             ? h('span', { class: 'chip-time', style: `--cor-equipe: ${timeDe.get(p.id).cor}` }, timeDe.get(p.id).nome)
             : null,
           pendentes.has(p.id) ? h('span', { class: 'pendente', title: 'Aguardando envio ao servidor' }, ' • pendente') : null),
-        h('span', { class: 'nota', 'aria-label': `nota ${p.nota}` }, String(p.nota)),
+        campoNota(p, timeDe.has(p.id)),
         acoes);
     }));
   }
@@ -170,9 +209,11 @@ export async function render(el, { id }, ctx) {
       });
     });
     el.append(form);
+    el.append(h('a', { class: 'btn btn-secundario btn-importar', href: `#/sessao/${id}/importar` },
+      icone('lista'), 'Importar lista do WhatsApp'));
   }
 
-  el.append(h('section', { 'aria-label': 'Lista de participantes' }, resumo, lista, vazio));
+  el.append(h('section', { 'aria-label': 'Lista de participantes' }, resumo, avisoNotas, lista, vazio));
 
   // Próximo passo: sorteio / times
   const areaSorteio = h('section', { class: 'acoes acoes-coluna', 'aria-label': 'Times' });
