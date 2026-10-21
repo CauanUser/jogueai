@@ -246,7 +246,9 @@ export async function render(el, { id }, ctx) {
     if (p.status === STATUS_PARTIDA.CONFIGURADA) {
       itens.push(botao('Iniciar partida', 'btn-primario btn-gigante', (b) => {
         prepararAudio();
-        executar(b, () => ctx.partidas.iniciar(id));
+        executar(b, () => ctx.partidas.iniciar(id), 'Apito! Partida iniciada.').then(() => {
+          if (d.partida.status === STATUS_PARTIDA.EM_ANDAMENTO) apitar({ bipes: 1, duracao: 0.65, frequencia: 1450 });
+        });
       }));
     }
     if (p.status === STATUS_PARTIDA.EM_ANDAMENTO) {
