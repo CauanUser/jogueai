@@ -28,7 +28,7 @@ export async function baixarDoServidor({ client, store, fila }) {
   let gravados = 0;
   const lotes = [
     [STORES.SESSOES, sessoes, (x) => x.id],
-    [STORES.PARTICIPANTES, participantes.map((p) => ({ ...p, nota: Number(p.nota) })), (x) => x.id],
+    [STORES.PARTICIPANTES, participantes.map((p) => ({ ...p, nota: p.nota === null ? null : Number(p.nota) })), (x) => x.id],
     // Sorteios e suas equipes são enviados juntos, identificados pelo id do sorteio.
     [STORES.SORTEIOS, sorteios, (x) => x.id],
     [STORES.EQUIPES, equipes, (x) => x.sorteio_id],
