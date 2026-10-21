@@ -53,7 +53,10 @@ export function criarRodizioRepo({ store, sorteios, partidas, aoGravar = () => {
     // A última saída da fila define a nova posição; uma entrada posterior apaga essa marca.
     const aguardandoDesde = new Map();
     for (const evento of eventos) {
-      if (evento.corrigida) continue;
+      if (evento.corrigida) {
+        if (evento.participante_entrou_id) aguardandoDesde.set(evento.participante_entrou_id, evento.corrigida_em ?? evento.created_at);
+        continue;
+      }
       if (evento.participante_entrou_id) aguardandoDesde.delete(evento.participante_entrou_id);
       if (evento.participante_saiu_id) aguardandoDesde.set(evento.participante_saiu_id, evento.created_at);
     }
