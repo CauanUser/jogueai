@@ -2,6 +2,7 @@ import { STORES, enfileirar } from '../services/localStore.js';
 import { novoId } from '../utils/ids.js';
 import { agoraMonotonicoISO } from '../utils/datas.js';
 import { validarParticipante } from '../domain/validacao.js';
+import { validarNomesParaImportar } from '../domain/importacaoLista.js';
 import { participantesEditaveis } from '../domain/sessao.js';
 import { ErroDeNegocio } from './sessoesRepo.js';
 
@@ -58,6 +59,33 @@ export function criarParticipantesRepo({ store, aoGravar = () => {} }) {
       if (!v.ok) throw new ErroDeNegocio('Dados inválidos.', { erros: v.erros });
       const agora = agoraMonotonicoISO();
       return gravar({ id: novoId(), sessao_id: sessaoId, ...v.valor, created_at: agora, updated_at: agora });
+    },
+
+    /**
+     * Adiciona vários participantes de uma vez, SEM nota (importação da lista).
+     * Tudo ou nada: se algum nome for inválido ou repetido, nada é gravado.
+     * A ordem da lista é preservada como ordem de chegada.
+     */
+    async adicionarVarios(sessaoId, nomes) {
+      await exigirSessaoEditavel(sessaoId);
+      const existentes = await repo.listarPorSessao(sessaoId);
+      const v = validarNomesParaImportar(nomes, existentes);
+      if (!v.ok) throw new ErroDeNegocio('Há nomes inválidos ou repetidos na importação.', { errosPorIndice: v.erros });
+      if (!v.nomes.length) return [];
+      const novos = v.nomes.map((nome) => {
+        const agora = agoraMonotonicoISO();
+        return { id: novoId(), sessao_id: sessaoId, nome, nota: null, created_at: agora, updated_at: agora };
+      });
+      await store.transacao([STORES.PARTICIPANTES, STORES.OUTBOX], (h) => {
+        for (const p of novos) {
+          h[STORES.PARTICIPANTES].put(p);
+          enfileirar(h[STORES.OUTBOX], {
+            tabela: 'participantes', acao: 'upsert', registroId: p.id, dados: payloadParticipante(p),
+          });
+        }
+      });
+      aoGravar();
+      return novos;
     },
 
     async editar(id, dados) {
