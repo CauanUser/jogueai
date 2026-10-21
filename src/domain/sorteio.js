@@ -148,6 +148,10 @@ export function sortearEquipes(participantes, {
 } = {}) {
   const ids = new Set(participantes.map((p) => p.id));
   if (ids.size !== participantes.length) throw new Error('Há participantes repetidos na lista.');
+  const semNota = participantes.filter((p) => !(Number.isInteger(Number(p.nota)) && p.nota !== null && p.nota >= 1 && p.nota <= 10));
+  if (semNota.length) {
+    throw new Error(`Defina a nota de todos os jogadores antes do sorteio. Sem nota: ${semNota.map((p) => p.nome ?? p.id).join(', ')}.`);
+  }
 
   const cfg = calcularConfiguracao({ total: participantes.length, jogadoresPorEquipe, qtdEquipes });
   if (!cfg.ok) throw new Error(cfg.erro);
