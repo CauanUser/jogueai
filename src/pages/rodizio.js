@@ -92,10 +92,26 @@ export async function render(el, { id, partidaId }, ctx) {
       previa, btnConfirmar);
     const historicoItens = estado.eventos.filter((e) => e.tipo === 'substituicao').map((e) =>
       h('li', { class: 'item-lista' },
-        h('span', { class: 'item-titulo' }, `${nomePorId.get(e.participante_entrou_id) ?? 'Jogador'} entrou`),
-        h('span', { class: 'item-sub' }, `${nomePorId.get(e.participante_saiu_id) ?? 'Jogador'} saiu · ${new Date(e.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`)));
+        h('span', { class: 'item-titulo' }, `${nomePorId.get(e.participante_entrou_id) ?? 'Jogador'} entrou${e.corrigida ? ' · corrigida' : ''}`),
+        h('span', { class: 'item-sub' }, `${nomePorId.get(e.participante_saiu_id) ?? 'Jogador'} saiu · ${new Date(e.corrigida_em ?? e.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`)));
+    const btnCorrigir = h('button', { class: 'btn btn-secundario', type: 'button' }, 'Corrigir última substituição');
+    btnCorrigir.hidden = !estado.eventos.some((e) => e.tipo === 'substituicao' && !e.corrigida);
+    btnCorrigir.addEventListener('click', () => comBotaoOcupado(btnCorrigir, async () => {
+      const ok = await confirmar({
+        titulo: 'Desfazer a última substituição?',
+        mensagem: 'O jogador que saiu voltará para o time perdedor. O jogador que entrou voltará à fila ou à equipe de origem, se tinha uma.',
+        textoConfirmar: 'Desfazer substituição',
+      });
+      if (!ok) return;
+      try {
+        await ctx.rodizio.corrigirUltima(id, partidaId);
+        toast('Substituição corrigida.');
+        ctx.navegar(`/sessao/${id}/rodizio/${partidaId}`);
+      } catch (e) { toast(e.message, 'erro'); }
+    }));
     elHistorico.replaceChildren(h('h2', {}, 'Substituições desta partida'),
-      historicoItens.length ? h('ul', { class: 'lista' }, historicoItens) : h('p', { class: 'ajuda' }, 'Nenhuma substituição registrada ainda.'));
+      historicoItens.length ? h('ul', { class: 'lista' }, historicoItens) : h('p', { class: 'ajuda' }, 'Nenhuma substituição registrada ainda.'),
+      btnCorrigir);
     const btnEncerrar = h('button', { class: 'btn btn-secundario btn-grande', type: 'button' },
       estado.encerradoSemTroca ? 'Rodízio concluído' : estado.eventos.some((e) => e.tipo === 'substituicao') ? 'Concluir rodízio' : 'Continuar sem substituições');
     btnEncerrar.disabled = estado.encerradoSemTroca;
