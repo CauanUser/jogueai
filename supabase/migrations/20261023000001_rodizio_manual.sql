@@ -7,11 +7,14 @@ create table public.rodizio_eventos (
   partida_id uuid not null,
   sorteio_id uuid not null,
   equipe_id uuid,
+  equipe_origem_id uuid,
   participante_saiu_id uuid,
   participante_entrou_id uuid,
   tipo text not null check (tipo in ('substituicao', 'sem_substituicao', 'encerrado')),
   formacao_antes jsonb,
   formacao_depois jsonb,
+  corrigida boolean not null default false,
+  corrigida_em timestamptz,
   created_at timestamptz not null default now(),
   constraint rodizio_sessao_fk foreign key (sessao_id, owner_id)
     references public.sessoes (id, owner_id) on delete cascade,
@@ -20,6 +23,8 @@ create table public.rodizio_eventos (
   constraint rodizio_sorteio_fk foreign key (sessao_id, sorteio_id)
     references public.sorteios (sessao_id, id) on delete cascade,
   constraint rodizio_equipe_fk foreign key (sessao_id, equipe_id)
+    references public.equipes (sessao_id, id) on delete no action,
+  constraint rodizio_equipe_origem_fk foreign key (sessao_id, equipe_origem_id)
     references public.equipes (sessao_id, id) on delete no action,
   constraint rodizio_saiu_fk foreign key (sessao_id, participante_saiu_id)
     references public.participantes (sessao_id, id) on delete no action,
