@@ -82,7 +82,7 @@ export function criarSessoesRepo({ store, aoGravar = () => {} }) {
     async excluir(id) {
       const filhos = [
         STORES.PARTICIPANTES, STORES.SORTEIOS, STORES.EQUIPES, STORES.EQUIPE_PARTICIPANTES,
-        STORES.PARTIDAS, STORES.PARTIDA_ESCALACOES,
+        STORES.PARTIDAS, STORES.PARTIDA_ESCALACOES, STORES.GOLS,
       ];
       const registros = await Promise.all(filhos.map((st) => store.listarPorIndice(st, 'sessao_id', id)));
       await store.transacao([STORES.SESSOES, ...filhos, STORES.OUTBOX], (h) => {
