@@ -31,6 +31,8 @@ export async function criarApp() {
   });
 
   const aoGravar = () => { fila.processar(); };
+  const sorteios = criarSorteiosRepo({ store, aoGravar });
+  const partidas = criarPartidasRepo({ store, aoGravar });
   const ctx = {
     config,
     supabaseConfigurado: supabaseConfigurado(),
@@ -40,9 +42,9 @@ export async function criarApp() {
     fila,
     sessoes: criarSessoesRepo({ store, aoGravar }),
     participantes: criarParticipantesRepo({ store, aoGravar }),
-    sorteios: criarSorteiosRepo({ store, aoGravar }),
-    partidas: criarPartidasRepo({ store, aoGravar }),
-    rodizio: criarRodizioRepo({ store, sorteios: criarSorteiosRepo({ store, aoGravar }), partidas: criarPartidasRepo({ store, aoGravar }), aoGravar }),
+    sorteios,
+    partidas,
+    rodizio: criarRodizioRepo({ store, sorteios, partidas, aoGravar }),
     baixarDoServidor: () => baixarDoServidor({ client, store, fila }),
   };
 
