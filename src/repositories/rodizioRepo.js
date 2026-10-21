@@ -9,7 +9,8 @@ const isoAgora = () => new Date().toISOString();
 const payloadEvento = (e) => ({
   id: e.id, sessao_id: e.sessao_id, partida_id: e.partida_id, sorteio_id: e.sorteio_id,
   equipe_id: e.equipe_id ?? null, participante_saiu_id: e.participante_saiu_id ?? null,
-  participante_entrou_id: e.participante_entrou_id ?? null, tipo: e.tipo, created_at: e.created_at,
+  participante_entrou_id: e.participante_entrou_id ?? null, tipo: e.tipo,
+  formacao_antes: e.formacao_antes ?? null, formacao_depois: e.formacao_depois ?? null, created_at: e.created_at,
 });
 
 export function criarRodizioRepo({ store, sorteios, partidas, aoGravar = () => {} }) {
@@ -76,7 +77,16 @@ export function criarRodizioRepo({ store, sorteios, partidas, aoGravar = () => {
       const evento = {
         id: novoId(), sessao_id: sessaoId, partida_id: partidaId, sorteio_id: st.atual.sorteio.id,
         equipe_id: st.equipePerdedora.id, participante_saiu_id: participanteSaiId,
-        participante_entrou_id: participanteEntraId, tipo: 'substituicao', created_at: agora,
+        participante_entrou_id: participanteEntraId, tipo: 'substituicao',
+        formacao_antes: {
+          vencedora: st.equipeVencedora.jogadores.map((p) => p.id),
+          perdedora: st.equipePerdedora.jogadores.map((p) => p.id),
+        },
+        formacao_depois: {
+          vencedora: st.equipeVencedora.jogadores.map((p) => p.id),
+          perdedora: st.equipePerdedora.jogadores.map((p) => p.id === participanteSaiId ? participanteEntraId : p.id),
+        },
+        created_at: agora,
       };
       await store.transacao([STORES.EQUIPE_PARTICIPANTES, STORES.OUTBOX, STORES.RODIZIO], (h) => {
         h[STORES.EQUIPE_PARTICIPANTES].delete(membroSai.id);
@@ -99,7 +109,7 @@ export function criarRodizioRepo({ store, sorteios, partidas, aoGravar = () => {
       const evento = {
         id: novoId(), sessao_id: sessaoId, partida_id: partidaId, sorteio_id: st.atual.sorteio.id,
         equipe_id: null, participante_saiu_id: null, participante_entrou_id: null,
-        tipo, created_at: isoAgora(),
+        tipo, formacao_antes: null, formacao_depois: null, created_at: isoAgora(),
       };
       await store.transacao([STORES.RODIZIO, STORES.OUTBOX], (h) => {
         h[STORES.RODIZIO].put(evento);
