@@ -10,6 +10,8 @@ create table public.rodizio_eventos (
   participante_saiu_id uuid,
   participante_entrou_id uuid,
   tipo text not null check (tipo in ('substituicao', 'sem_substituicao', 'encerrado')),
+  formacao_antes jsonb,
+  formacao_depois jsonb,
   created_at timestamptz not null default now(),
   constraint rodizio_sessao_fk foreign key (sessao_id, owner_id)
     references public.sessoes (id, owner_id) on delete cascade,
