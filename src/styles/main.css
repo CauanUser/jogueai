@@ -388,3 +388,15 @@ button.item-gol { cursor: pointer; }
 .aviso-confirmacao { background: var(--alerta-claro); color: var(--alerta); padding: 10px 12px; border-radius: 10px; font-weight: 700; }
 .fim-jogo { display: flex; flex-direction: column; gap: 8px; }
 .fim-confirmado { background: var(--verde-claro); }
+
+
+/* Rodízio manual ------------------------------------------------------ */
+.rodizio-equipe { border-left: 5px solid var(--cor-equipe); }
+.rodizio-equipe h2 { font-size: 1.05rem; margin: 0 0 8px; overflow-wrap: anywhere; }
+.rodizio-perdedora { border-color: var(--alerta); }
+.rodizio-fila h2 { margin-top: 0; }
+.rodizio-previa { border: 1px solid var(--borda); border-radius: 12px; padding: 12px; margin: 12px 0; }
+.rodizio-previa h3 { margin: 0 0 8px; font-size: 1rem; }
+.rodizio-previa p { margin: 4px 0; font-weight: 700; overflow-wrap: anywhere; }
+.rodizio-fila .lista { margin-top: 8px; }
+.rodizio-equipe .lista { margin: 0; }

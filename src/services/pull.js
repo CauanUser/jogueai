@@ -17,7 +17,7 @@ async function buscarTodos(client, tabela, colunas) {
 
 export async function baixarDoServidor({ client, store, fila }) {
   if (!client) throw new Error('Supabase não configurado.');
-  const [sessoes, participantes, sorteios, equipes, membros, partidas, escalacoes, gols] = await Promise.all([
+  const [sessoes, participantes, sorteios, equipes, membros, partidas, escalacoes, gols, rodizio] = await Promise.all([
     buscarTodos(client, 'sessoes', 'id, data_referencia, status, encerrada_em, created_at, updated_at'),
     buscarTodos(client, 'participantes', 'id, sessao_id, nome, nota, created_at, updated_at'),
     buscarTodos(client, 'sorteios', 'id, sessao_id, numero, jogadores_por_equipe, qtd_equipes, confirmado_em, created_at'),
@@ -26,6 +26,7 @@ export async function baixarDoServidor({ client, store, fila }) {
     buscarTodos(client, 'partidas', '*'),
     buscarTodos(client, 'partida_escalacoes', 'id, sessao_id, partida_id, participante_id, lado, created_at'),
     buscarTodos(client, 'gols', 'id, sessao_id, partida_id, equipe_id, participante_id, tipo, tempo_partida_segundos, ocorrido_em, created_at, updated_at'),
+    buscarTodos(client, 'rodizio_eventos', 'id, sessao_id, partida_id, sorteio_id, equipe_id, equipe_origem_id, participante_saiu_id, participante_entrou_id, tipo, formacao_antes, formacao_depois, corrigida, corrigida_em, created_at'),
   ]);
   const pendentes = await fila.registrosPendentes();
   let gravados = 0;
@@ -39,6 +40,7 @@ export async function baixarDoServidor({ client, store, fila }) {
     [STORES.PARTIDAS, partidas.map(({ owner_id: _o, ...p }) => ({ ...p, relogio_acumulado_ms: Number(p.relogio_acumulado_ms) })), (x) => x.id],
     [STORES.PARTIDA_ESCALACOES, escalacoes, (x) => x.partida_id],
     [STORES.GOLS, gols, (x) => x.id],
+    [STORES.RODIZIO, rodizio, (x) => x.id],
   ];
   await store.transacao(lotes.map(([nome]) => nome), (h) => {
     for (const [nome, linhas, chave] of lotes) {
@@ -47,5 +49,5 @@ export async function baixarDoServidor({ client, store, fila }) {
       }
     }
   });
-  return { sessoes: sessoes.length, participantes: participantes.length, sorteios: sorteios.length, partidas: partidas.length, gols: gols.length, gravados };
+  return { sessoes: sessoes.length, participantes: participantes.length, sorteios: sorteios.length, partidas: partidas.length, gols: gols.length, rodizio: rodizio.length, gravados };
 }

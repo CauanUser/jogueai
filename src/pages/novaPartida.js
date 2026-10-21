@@ -15,7 +15,7 @@ export async function lerPadrao(ctx) {
   return v.ok ? v.config : { ...CONFIG_PADRAO };
 }
 
-export async function render(el, { id }, ctx) {
+export async function render(el, { id, equipeAId, equipeBId }, ctx) {
   const sessao = await ctx.sessoes.obter(id);
   if (!sessao) { ctx.navegar('/'); return; }
 
@@ -45,6 +45,10 @@ export async function render(el, { id }, ctx) {
   const partidasAnteriores = await ctx.partidas.listarPorSessao(id);
   const cfg = await lerPadrao(ctx);
   let selecionadas = sugerirConfronto(atual.equipes, partidasAnteriores);
+  if (equipeAId && equipeBId && equipeAId !== equipeBId &&
+      atual.equipes.some((e) => e.id === equipeAId) && atual.equipes.some((e) => e.id === equipeBId)) {
+    selecionadas = [equipeAId, equipeBId];
+  }
 
   // ---- Equipes ------------------------------------------------------
   const grade = h('div', { class: 'escolha-equipes', role: 'group', 'aria-label': 'Equipes da partida' });
