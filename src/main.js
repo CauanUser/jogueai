@@ -14,7 +14,7 @@ function montarCasca(ctx) {
   const casca = h('div', { class: 'casca' },
     h('header', { class: 'topo' },
       h('a', { href: '#/', class: 'marca', 'aria-label': 'JogueAI, início' },
-        icone('bola'), h('span', {}, 'Jogue', h('strong', {}, 'AI'))),
+        h('img', { src: '/LogoTelaInicialAbertura.jpeg', alt: 'JogueAI', class: 'marca-logo' })),
       indicadorSync(ctx),
     ),
     conteudo,
