@@ -38,8 +38,19 @@ export function ordenarSessoes(sessoes) {
   );
 }
 
+/** Participante já tem nota válida (1 a 10)? Importados da lista começam sem nota. */
+export function temNota(p) {
+  return Number.isInteger(p?.nota) && p.nota >= 1 && p.nota <= 10;
+}
+
 export function resumoParticipantes(participantes) {
   const total = participantes.length;
-  const somaNotas = participantes.reduce((s, p) => s + Number(p.nota), 0);
-  return { total, somaNotas, media: total ? somaNotas / total : 0 };
+  const avaliados = participantes.filter(temNota);
+  const somaNotas = avaliados.reduce((s, p) => s + p.nota, 0);
+  return {
+    total,
+    somaNotas,
+    media: avaliados.length ? somaNotas / avaliados.length : 0,
+    semNota: total - avaliados.length,
+  };
 }
