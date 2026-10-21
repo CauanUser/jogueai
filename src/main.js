@@ -14,7 +14,7 @@ function montarCasca(ctx) {
   const casca = h('div', { class: 'casca' },
     h('header', { class: 'topo' },
       h('a', { href: '#/', class: 'marca', 'aria-label': 'JogueAI, início' },
-        h('img', { src: '/LogoTelaInicialAbertura.jpeg', alt: 'JogueAI', class: 'marca-logo' })),
+        h('img', { src: '/IconeAPP.jpeg', alt: '', class: 'marca-simbolo' }), h('span', { class: 'marca-nome' }, 'Jogue', h('strong', {}, 'AI'))),
       indicadorSync(ctx),
     ),
     conteudo,
@@ -31,11 +31,21 @@ function montarCasca(ctx) {
 
 async function iniciar() {
   const raiz = document.getElementById('app');
+  const inicioSplash = Date.now();
+  const splash = h('div', { class: 'splash-inicial', role: 'status', 'aria-label': 'Abrindo JogueAI' },
+    h('img', { src: '/LogoTelaInicialAbertura.jpeg', alt: 'JogueAI', class: 'splash-logo' }),
+    h('span', { class: 'splash-carregando' }, 'PREPARANDO O JOGO')
+  );
+  raiz.replaceChildren(splash);
   try {
     const ctx = await criarApp();
     const { casca, conteudo, marcarNav } = montarCasca(ctx);
-    raiz.replaceChildren(casca);
+    raiz.append(casca);
     await iniciarRoteador({ container: conteudo, ctx, aoNavegar: marcarNav });
+    await new Promise((resolve) => setTimeout(resolve, Math.max(0, 1500 - (Date.now() - inicioSplash))));
+    splash.classList.add('splash-saindo');
+    await new Promise((resolve) => setTimeout(resolve, 320));
+    splash.remove();
 
     // Integração Android: voltar e retorno do segundo plano.
     App.addListener('backButton', () => {
@@ -50,6 +60,7 @@ async function iniciar() {
     }).catch(() => {});
   } catch (e) {
     console.error(e);
+    splash.remove();
     raiz.replaceChildren(h('div', { class: 'erro-fatal' },
       h('h1', {}, 'Não foi possível iniciar o JogueAI'),
       h('p', {}, e?.message ?? String(e)),
