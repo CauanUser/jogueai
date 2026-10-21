@@ -14,6 +14,15 @@ const payloadEvento = (e) => ({
 });
 
 export function criarRodizioRepo({ store, sorteios, partidas, aoGravar = () => {} }) {
+  const filas = new Map();
+  const emSerie = (id, fn) => {
+    const anterior = filas.get(id) ?? Promise.resolve();
+    const atual = anterior.catch(() => {}).then(fn);
+    filas.set(id, atual);
+    atual.finally(() => { if (filas.get(id) === atual) filas.delete(id); }).catch(() => {});
+    return atual;
+  };
+
   async function eventosDaSessao(sessaoId) {
     return (await store.listarPorIndice(STORES.RODIZIO, 'sessao_id', sessaoId))
       .sort((a, b) => String(a.created_at).localeCompare(String(b.created_at)));
@@ -52,9 +61,10 @@ export function criarRodizioRepo({ store, sorteios, partidas, aoGravar = () => {
     estado,
     async historico(sessaoId) { return eventosDaSessao(sessaoId); },
 
-    async substituir(sessaoId, partidaId, { participanteSaiId, participanteEntraId }) {
+    substituir(sessaoId, partidaId, { participanteSaiId, participanteEntraId }) {
+      return emSerie(partidaId, async () => {
       const st = await estado(sessaoId, partidaId);
-      if (st.encerradoSemTroca) throw new ErroDeNegocio('O rodízio desta partida já foi encerrado sem substituições.');
+      if (st.encerradoSemTroca) throw new ErroDeNegocio('O rodízio desta partida já foi concluído.');
       const erro = validarSubstituicao({
         equipePerdedora: st.equipePerdedora,
         aguardando: st.atual.aguardando,
@@ -100,14 +110,16 @@ export function criarRodizioRepo({ store, sorteios, partidas, aoGravar = () => {
       });
       aoGravar();
       return evento;
+      });
     },
 
-    async continuarSemSubstituicao(sessaoId, partidaId) {
+    continuarSemSubstituicao(sessaoId, partidaId) {
+      return emSerie(partidaId, async () => {
       const st = await estado(sessaoId, partidaId);
       if (st.encerradoSemTroca) throw new ErroDeNegocio('O rodízio desta partida já foi concluído.');
       const tipo = st.eventos.some((e) => e.tipo === 'substituicao') ? 'encerrado' : 'sem_substituicao';
       const evento = {
-        id: novoId(), sessao_id: sessaoId, partida_id: partidaId, sorteio_id: st.atual.sorteio.id,
+        id: partidaId, sessao_id: sessaoId, partida_id: partidaId, sorteio_id: st.atual.sorteio.id,
         equipe_id: null, participante_saiu_id: null, participante_entrou_id: null,
         tipo, formacao_antes: null, formacao_depois: null, created_at: isoAgora(),
       };
@@ -117,6 +129,7 @@ export function criarRodizioRepo({ store, sorteios, partidas, aoGravar = () => {
       });
       aoGravar();
       return evento;
+      });
     },
   };
 }
