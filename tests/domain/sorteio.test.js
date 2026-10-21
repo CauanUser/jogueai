@@ -69,6 +69,11 @@ describe('sorteio equilibrado', () => {
       .toThrow(/repetidos/);
   });
 
+  it('não sorteia com jogador sem nota (importado da lista)', () => {
+    const p = [...jogadores([5, 5, 5, 5, 5, 5, 5, 5, 5]), { id: 'novo', nome: 'Pedrin', nota: null }];
+    expect(() => sortearEquipes(p, { jogadoresPorEquipe: 5 })).toThrow(/Sem nota: Pedrin/);
+  });
+
   it('erro claro quando faltam participantes', () => {
     expect(() => sortearEquipes(jogadores([5, 5, 5]), { jogadoresPorEquipe: 5 })).toThrow(/pelo menos 10/);
   });
