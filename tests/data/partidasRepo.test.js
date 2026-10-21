@@ -129,12 +129,10 @@ describe('encerramento', () => {
     expect(new Set(fins.map((o) => o.dados.ended_at)).size).toBe(1);
   });
 
-  it('automático por limite de gols (placar informado)', async () => {
+  it('o placar do encerramento vem dos gols gravados, não de um valor informado', async () => {
     const p = await criar();
     await partidas.iniciar(p.id, T0);
-    const r = await partidas.aplicarEventoAutomatico(p.id, { agora: T0 + 100_000, placarA: 2 });
-    expect(r.evento.motivo).toBe('gols');
-    expect(r.partida.relogio_acumulado_ms).toBe(100_000);
+    expect(await partidas.aplicarEventoAutomatico(p.id, { agora: T0 + 100_000, placarA: 2 })).toBeNull();
   });
 
   it('intervalo: pausa automática na metade e depois segue até o fim', async () => {
@@ -177,5 +175,139 @@ describe('encerramento', () => {
     await sessoes.excluir(sessao.id);
     expect(await store.listar(STORES.PARTIDAS)).toHaveLength(0);
     expect(await store.listar(STORES.PARTIDA_ESCALACOES)).toHaveLength(0);
+  });
+});
+
+describe('gols da partida', () => {
+  const ladoDe = async (p, lado) => (await partidas.detalhar(p.id))[lado === 'A' ? 'jogadoresA' : 'jogadoresB'];
+
+  it('registra gol com minuto do cronômetro e enfileira para o servidor', async () => {
+    const p = await criar();
+    await expect(partidas.registrarGol(p.id, { lado: 'A' }, T0)).rejects.toThrow(/Inicie/);
+    await partidas.iniciar(p.id, T0);
+    const [autor] = await ladoDe(p, 'A');
+    const r = await partidas.registrarGol(p.id, { lado: 'A', participanteId: autor.id }, T0 + 95_000);
+    expect(r.encerrou).toBe(false);
+    expect(r.gol).toMatchObject({ tempo_partida_segundos: 95, tipo: 'normal', equipe_id: p.equipe_a_id, participante_id: autor.id });
+    expect(await partidas.placar(p.id)).toEqual({ a: 1, b: 0 });
+    const op = (await store.listar(STORES.OUTBOX)).find((o) => o.tabela === 'gols');
+    expect(op).toMatchObject({ acao: 'upsert', registroId: r.gol.id });
+    expect(op.dados).not.toHaveProperty('updated_at');
+  });
+
+  it('gol contra conta para o adversário; autor errado é recusado', async () => {
+    const p = await criar();
+    await partidas.iniciar(p.id, T0);
+    const [doA] = await ladoDe(p, 'A');
+    await expect(partidas.registrarGol(p.id, { lado: 'B', participanteId: doA.id }, T0 + 1000)).rejects.toThrow(/Gol normal/);
+    await partidas.registrarGol(p.id, { lado: 'B', participanteId: doA.id, tipo: 'contra' }, T0 + 1000);
+    expect(await partidas.placar(p.id)).toEqual({ a: 0, b: 1 });
+  });
+
+  it('atingir o limite de gols encerra a partida no mesmo instante', async () => {
+    const p = await criar(); // limite 2
+    await partidas.iniciar(p.id, T0);
+    await partidas.registrarGol(p.id, { lado: 'B' }, T0 + 60_000);
+    const r = await partidas.registrarGol(p.id, { lado: 'B' }, T0 + 150_000);
+    expect(r.encerrou).toBe(true);
+    coerente(r.partida);
+    expect(r.partida).toMatchObject({ status: 'finalizada', relogio_acumulado_ms: 150_000, ended_at: new Date(T0 + 150_000).toISOString() });
+    expect(r.partida.configuracao_extra.motivo_fim).toBe('gols');
+  });
+
+  it('"só tempo" não encerra por gols', async () => {
+    const p = await criar({ condicao_encerramento: 'tempo' });
+    await partidas.iniciar(p.id, T0);
+    for (let i = 0; i < 4; i++) expect((await partidas.registrarGol(p.id, { lado: 'A' }, T0 + i * 1000)).encerrou).toBe(false);
+  });
+
+  it('corrigir autor/tipo e remover gol', async () => {
+    const p = await criar();
+    await partidas.iniciar(p.id, T0);
+    const [a1] = await ladoDe(p, 'A');
+    const [b1] = await ladoDe(p, 'B');
+    const { gol } = await partidas.registrarGol(p.id, { lado: 'A' }, T0 + 10_000);
+    const ed = await partidas.editarGol(p.id, gol.id, { participanteId: a1.id, tipo: 'normal' });
+    expect(ed).toMatchObject({ participante_id: a1.id, tempo_partida_segundos: 10 });
+    await expect(partidas.editarGol(p.id, gol.id, { participanteId: b1.id, tipo: 'normal' })).rejects.toThrow(/Gol normal/);
+    expect((await partidas.editarGol(p.id, gol.id, { participanteId: b1.id, tipo: 'contra' })).tipo).toBe('contra');
+    expect(await partidas.removerGol(p.id, gol.id)).toEqual({ a: 0, b: 0 });
+    expect(await partidas.gols(p.id)).toEqual([]);
+    const ops = (await store.listar(STORES.OUTBOX)).filter((o) => o.tabela === 'gols');
+    expect(ops.at(-1)).toMatchObject({ acao: 'delete', registroId: gol.id });
+  });
+
+  it('um gol por engano que encerrou o jogo pode ser desfeito e a partida volta', async () => {
+    const p = await criar();
+    await partidas.iniciar(p.id, T0);
+    await partidas.registrarGol(p.id, { lado: 'A' }, T0 + 10_000);
+    const { gol, encerrou } = await partidas.registrarGol(p.id, { lado: 'A' }, T0 + 20_000);
+    expect(encerrou).toBe(true);
+    await expect(partidas.voltarAoJogo(p.id)).rejects.toThrow(/limite de gols/);
+    await partidas.removerGol(p.id, gol.id);
+    const x = await partidas.voltarAoJogo(p.id);
+    coerente(x);
+    expect(x).toMatchObject({ status: 'pausada', ended_at: null, relogio_acumulado_ms: 20_000 });
+    expect(x.configuracao_extra).not.toHaveProperty('motivo_fim');
+    await partidas.retomar(p.id, T0 + 30_000);
+    expect(partidas.decorrido(await partidas.obter(p.id), T0 + 40_000)).toBe(30_000);
+  });
+});
+
+describe('resultado: pênaltis e confirmação', () => {
+  const empatada = async (cfg = {}) => {
+    const p = await criar({ condicao_encerramento: 'tempo', ...cfg });
+    await partidas.iniciar(p.id, T0);
+    await partidas.registrarGol(p.id, { lado: 'A' }, T0 + 1000);
+    await partidas.registrarGol(p.id, { lado: 'B' }, T0 + 2000);
+    await partidas.aplicarEventoAutomatico(p.id, { agora: T0 + 480_000 });
+    return p;
+  };
+
+  it('empate com pênaltis: exige a disputa antes de confirmar', async () => {
+    const p = await empatada();
+    await expect(partidas.confirmar(p.id)).rejects.toThrow(/pênaltis/);
+    await expect(partidas.definirPenaltis(p.id, 3, 3)).rejects.toThrow(/vencedor/);
+    await partidas.definirPenaltis(p.id, 4, 3);
+    const c = await partidas.confirmar(p.id, T0 + 600_000);
+    coerente(c);
+    expect(c).toMatchObject({ status: 'confirmada', penaltis_a: 4, penaltis_b: 3, confirmed_at: new Date(T0 + 600_000).toISOString() });
+  });
+
+  it('sem empate não aceita pênaltis; empate "vale" confirma direto', async () => {
+    const p = await empatada({ desempate: 'nenhum' });
+    await expect(partidas.definirPenaltis(p.id, 4, 3)).rejects.toThrow(/empatada/);
+    expect((await partidas.confirmar(p.id)).status).toBe('confirmada');
+  });
+
+  it('confirmada: gols travados até reabrir; reabrir permite corrigir', async () => {
+    const p = await empatada();
+    await partidas.definirPenaltis(p.id, 5, 4);
+    await partidas.confirmar(p.id);
+    const [g] = await partidas.gols(p.id);
+    await expect(partidas.removerGol(p.id, g.id)).rejects.toThrow(/Reabra/);
+    await expect(partidas.registrarGol(p.id, { lado: 'A' })).rejects.toThrow(/Reabra/);
+    const r = await partidas.reabrir(p.id);
+    coerente(r);
+    expect(r.status).toBe('finalizada');
+    // corrigir o placar para 2 x 1 tira os pênaltis, que deixam de fazer sentido
+    await partidas.registrarGol(p.id, { lado: 'A' }, T0 + 700_000);
+    const x = await partidas.obter(p.id);
+    expect(x.penaltis_a).toBeNull();
+    expect((await partidas.confirmar(p.id)).status).toBe('confirmada');
+  });
+
+  it('não confirma partida em andamento', async () => {
+    const p = await criar();
+    await partidas.iniciar(p.id, T0);
+    await expect(partidas.confirmar(p.id)).rejects.toThrow(/confirmar/);
+  });
+
+  it('excluir a sessão remove os gols locais', async () => {
+    const p = await criar();
+    await partidas.iniciar(p.id, T0);
+    await partidas.registrarGol(p.id, { lado: 'A' }, T0 + 1000);
+    await sessoes.excluir(sessao.id);
+    expect(await store.listar(STORES.GOLS)).toHaveLength(0);
   });
 });
