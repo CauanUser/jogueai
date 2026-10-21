@@ -5,6 +5,8 @@ import * as configuracoes from './pages/configuracoes.js';
 import * as sorteio from './pages/sorteio.js';
 import * as equipes from './pages/equipes.js';
 import * as importarLista from './pages/importarLista.js';
+import * as novaPartida from './pages/novaPartida.js';
+import * as partida from './pages/partida.js';
 
 const ROTAS = [
   { padrao: /^\/$/, pagina: inicio, nav: 'inicio' },
@@ -13,6 +15,8 @@ const ROTAS = [
   { padrao: /^\/sessao\/([0-9a-f-]{36})\/sorteio$/i, pagina: sorteio, nav: 'inicio', params: ['id'] },
   { padrao: /^\/sessao\/([0-9a-f-]{36})\/equipes$/i, pagina: equipes, nav: 'inicio', params: ['id'] },
   { padrao: /^\/sessao\/([0-9a-f-]{36})\/importar$/i, pagina: importarLista, nav: 'inicio', params: ['id'] },
+  { padrao: /^\/sessao\/([0-9a-f-]{36})\/partida\/nova$/i, pagina: novaPartida, nav: 'inicio', params: ['id'] },
+  { padrao: /^\/partida\/([0-9a-f-]{36})$/i, pagina: partida, nav: 'inicio', params: ['id'] },
   { padrao: /^\/configuracoes$/, pagina: configuracoes, nav: 'config' },
 ];
 
