@@ -44,7 +44,7 @@ describe('adaptador Supabase', () => {
   });
 
   it('recusa tabela não suportada', async () => {
-    const r = await criarRemotoSupabase(clienteFalso({})).executar({ tabela: 'gols', acao: 'upsert' });
+    const r = await criarRemotoSupabase(clienteFalso({})).executar({ tabela: 'preferencias', acao: 'upsert' });
     expect(r).toMatchObject({ ok: false, transitorio: false });
   });
 
