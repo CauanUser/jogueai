@@ -5,7 +5,7 @@ import { avaliarSomas } from '../domain/sorteio.js';
 import { formatarDataReferencia, formatarHora } from '../utils/datas.js';
 import { partidaAtiva } from '../domain/partida.js';
 
-const STATUS_CURTO = { configurada: 'a começar', em_andamento: 'em andamento', pausada: 'pausada', finalizada: 'encerrada', confirmada: 'confirmada', cancelada: 'cancelada' };
+const STATUS_CURTO = { configurada: 'a começar', em_andamento: 'em andamento', pausada: 'pausada', finalizada: 'encerrada · falta confirmar', confirmada: 'resultado confirmado', cancelada: 'cancelada' };
 
 export async function render(el, { id }, ctx) {
   const sessao = await ctx.sessoes.obter(id);
