@@ -6,7 +6,7 @@ import {
   STATUS_PARTIDA, LIMITES, validarConfiguracao, partidaAtiva, relogioDaPartida, avaliarEventoAutomatico,
 } from '../domain/partida.js';
 import { ErroDeNegocio } from './sessoesRepo.js';
-import { setVencido } from '../domain/modalidades.js';
+import { setVencido, validarValor } from '../domain/modalidades.js';
 import {
   TIPO_GOL, placar as calcularPlacar, validarGol, equipeDoLado, ladoDaEquipe, ordenarGols,
   precisaPenaltis, validarPenaltis, pendenciaParaConfirmar,
@@ -277,6 +277,9 @@ export function criarPartidasRepo({ store, aoGravar = () => {} }) {
       return emSerie(id, async () => {
         const p = await store.obter(STORES.PARTIDAS, id);
         if (!p) throw new ErroDeNegocio('Partida não encontrada.');
+        const modalidade = p.configuracao_extra?.modalidade ?? 'futebol';
+        const erroValor = validarValor(modalidade, valor);
+        if (erroValor) throw new ErroDeNegocio(erroValor);
         const erro = validarGol(p, await escalacoesDaPartida(p), { lado, participanteId, tipo });
         if (erro) throw new ErroDeNegocio(erro);
         const momento = iso(agora);
