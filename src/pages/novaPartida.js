@@ -156,7 +156,7 @@ export async function render(el, { id }, ctx) {
       h('h2', { id: 'tit-equipes' }, 'Quem joga'), grade, infoEquipes),
     h('section', { class: 'cartao formulario', 'aria-labelledby': 'tit-regras' },
       h('h2', { id: 'tit-regras' }, 'Regras desta partida'),
-      h('p', { class: 'ajuda' }, modalidade === 'futebol' ? 'Futebol: cada gol vale 1. Escolha alvo de gols, tempo ou o que acontecer primeiro.' : modalidade === 'basquete' ? 'Basquete: lance livre = 1, cesta comum = 2 e cesta de três = 3. Defina um alvo de pontos, o tempo ou ambos.' : 'Vôlei: escolha a meta de pontos. Não há cronômetro nem sets; vence quem alcançar a meta primeiro.'),
+      h('p', { class: 'ajuda' }, modalidade === 'futebol' ? 'Futebol: cada gol vale 1. Escolha alvo de gols, tempo ou o que acontecer primeiro.' : modalidade === 'basquete' ? 'Basquete: lance livre = 1, cesta comum = 2 e cesta de três = 3. Defina um alvo de pontos, o tempo ou ambos.' : 'Vôlei: escolha a meta de pontos. Sem cronômetro ou sets. Se empatar faltando 1 ponto para a meta, entra no ZEROU: o placar auxiliar zera no empate e vence quem abrir 2 pontos.'),
       modalidade !== 'volei' ? stDuracao.el : null, modalidade !== 'volei' ? rapidas : null, condicao, blocoGols, modalidade === 'futebol' ? stAcrescimos.el : null, modalidade === 'futebol' ? stIntervalo.el : null,
       modalidade === 'futebol' ? h('p', { class: 'ajuda' }, 'Com intervalo, o cronômetro pausa sozinho na metade do tempo.') : null,
       empate,
