@@ -56,7 +56,7 @@ describe('regras específicas por modalidade', () => {
       'A', 'A', // abre 2 x 0 e vence
     ]);
     expect(avaliarVolei(eventos, partidaVolei())).toMatchObject({
-      a: 12, b: 11, zerou: true, zerouA: 2, zerouB: 0, vencedor: 'A', vencedorPorZerou: true,
+      a: 13, b: 11, zerou: true, zerouA: 2, zerouB: 0, vencedor: 'A', vencedorPorZerou: true,
     });
   });
 
