@@ -31,7 +31,6 @@ export function placar(p, gols) {
  */
 export function validarGol(p, escalacoes, { lado, participanteId = null, tipo = TIPO_GOL.NORMAL }) {
   const futebol = (p?.configuracao_extra?.modalidade ?? 'futebol') === 'futebol';
-  const unidade = futebol ? 'gol' : 'ponto';
   if (!podeLancarGols(p)) {
     if (p?.status === STATUS_PARTIDA.CONFIGURADA) return `Inicie a partida antes de registrar ${futebol ? 'gols' : 'pontos'}.`;
     return `O resultado desta partida já foi fechado. Reabra-a para corrigir a pontuação.`;
