@@ -124,6 +124,8 @@ export function situacaoTempo(p, agora) {
  */
 export function avaliarEventoAutomatico(p, { agora, placarA = 0, placarB = 0 }) {
   if (p.status !== STATUS_PARTIDA.EM_ANDAMENTO && p.status !== STATUS_PARTIDA.PAUSADA) return null;
+  // Vôlei não usa cronômetro; a meta e o ZEROU são avaliados junto ao registro do ponto.
+  if (p.configuracao_extra?.modalidade === 'volei') return null;
   const relogio = relogioDaPartida(p);
 
   if (terminaPorGols(p) && (placarA >= p.limite_gols || placarB >= p.limite_gols)) {
