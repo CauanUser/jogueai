@@ -157,7 +157,7 @@ export function criarPartidasRepo({ store, aoGravar = () => {} }) {
         equipe_b_id: equipeBId,
         status: STATUS_PARTIDA.CONFIGURADA,
         ...v.config,
-        configuracao_extra: {},
+        configuracao_extra: { modalidade: config.modalidade ?? 'futebol', sets_a: 0, sets_b: 0, set_atual: 1 },
         relogio_acumulado_ms: 0,
         relogio_retomado_em: null,
         penaltis_a: null,
