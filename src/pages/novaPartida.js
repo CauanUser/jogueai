@@ -4,6 +4,7 @@ import { stepper } from '../components/stepper.js';
 import { participantesEditaveis } from '../domain/sessao.js';
 import { CONFIG_PADRAO, CONDICOES, LIMITES, validarConfiguracao, sugerirConfronto } from '../domain/partida.js';
 import { formatarTempo } from '../domain/cronometro.js';
+import { normalizarModalidade } from '../domain/modalidades.js';
 
 export const META_PADRAO = 'partida_padrao';
 
@@ -43,7 +44,11 @@ export async function render(el, { id }, ctx) {
   }
 
   const partidasAnteriores = await ctx.partidas.listarPorSessao(id);
+  const sessaoConfig = await ctx.store.obterMeta('sessao_config_' + id) ?? { modalidade: 'futebol' };
+  const modalidade = normalizarModalidade(sessaoConfig.modalidade);
   const cfg = await lerPadrao(ctx);
+  if (modalidade === 'basquete') { cfg.condicao_encerramento = CONDICOES.TEMPO; cfg.limite_gols = null; cfg.desempate = 'nenhum'; }
+  if (modalidade === 'volei') { cfg.condicao_encerramento = CONDICOES.GOLS; cfg.limite_gols = 25; cfg.acrescimos_segundos = 0; cfg.intervalo_segundos = 0; cfg.desempate = 'nenhum'; }
   let selecionadas = sugerirConfronto(atual.equipes, partidasAnteriores);
 
   // ---- Equipes ------------------------------------------------------
@@ -87,10 +92,11 @@ export async function render(el, { id }, ctx) {
     }, `${m} min`)));
 
   const stGols = stepper({
-    id: 'gols', rotulo: 'Limite de gols', valor: cfg.limite_gols ?? 2, min: 1, max: 20,
+    id: 'gols', rotulo: modalidade === 'volei' ? 'Pontos para vencer o set' : 'Limite de gols/pontos', valor: cfg.limite_gols ?? (modalidade === 'basquete' ? 0 : 2), min: 1, max: modalidade === 'volei' ? 50 : 99,
     aoMudar: (v) => { cfg.limite_gols = v; },
   });
   const blocoGols = h('div', {}, stGols.el);
+  if (modalidade === 'basquete') blocoGols.hidden = true;
 
   const radio = (nome, valor, texto, atualValor, aoEscolher) => {
     const inp = h('input', { type: 'radio', name: nome, value: valor, id: `${nome}-${valor}` });
@@ -134,7 +140,7 @@ export async function render(el, { id }, ctx) {
     const v = validarConfiguracao(cfg);
     if (!v.ok) { erros.textContent = Object.values(v.erros).join(' '); return; }
     try {
-      const p = await ctx.partidas.criar(id, { equipeAId: selecionadas[0], equipeBId: selecionadas[1], config: v.config });
+      const p = await ctx.partidas.criar(id, { equipeAId: selecionadas[0], equipeBId: selecionadas[1], config: { ...v.config, modalidade } });
       if (salvarPadrao.checked) await ctx.store.definirMeta(META_PADRAO, v.config);
       toast(`Partida nº ${p.numero} criada.`);
       ctx.navegar(`/partida/${p.id}`);
@@ -148,6 +154,7 @@ export async function render(el, { id }, ctx) {
       h('h2', { id: 'tit-equipes' }, 'Quem joga'), grade, infoEquipes),
     h('section', { class: 'cartao formulario', 'aria-labelledby': 'tit-regras' },
       h('h2', { id: 'tit-regras' }, 'Regras desta partida'),
+      h('p', { class: 'ajuda' }, modalidade === 'futebol' ? 'Futebol: gols, tempo e pênaltis conforme a regra escolhida.' : modalidade === 'basquete' ? 'Basquete: placar por pontos; cada lance livre vale 1, cesta comum 2 e cesta de três 3. A partida termina pelo tempo.' : 'Vôlei: cada ponto vale 1; o set exige atingir o limite com vantagem de 2 pontos. O jogo é decidido por sets.'),
       stDuracao.el, rapidas, condicao, blocoGols, stAcrescimos.el, stIntervalo.el,
       h('p', { class: 'ajuda' }, 'Com intervalo, o cronômetro pausa sozinho na metade do tempo.'),
       empate,
