@@ -46,7 +46,16 @@ export async function render(el, { id }, ctx) {
   let placar = await ctx.partidas.placar(id);
   let processando = false;
   const nomes = new Map([...d.jogadoresA, ...d.jogadoresB].map((j) => [j.id, j.nome]));
-  const goleirosPorEquipe = await ctx.store.obterMeta(`goleiros_por_equipe:${d.partida.sessao_id}`) ?? {};
+  const goleirosPorEquipeSalvos = await ctx.store.obterMeta(`goleiros_por_equipe:${d.partida.sessao_id}`) ?? {};
+  const goleirosFixos = await ctx.store.obterMeta(`goleiros_fixos:${d.partida.sessao_id}`);
+  const idsGoleirosFixos = new Set([
+    ...(goleirosFixos?.quantidade >= 1 && goleirosFixos.goleiroEsquerdoId ? [goleirosFixos.goleiroEsquerdoId] : []),
+    ...(goleirosFixos?.quantidade === 2 && goleirosFixos.goleiroDireitoId ? [goleirosFixos.goleiroDireitoId] : []),
+  ]);
+  const goleirosPorEquipe = {
+    [d.equipeA.id]: d.jogadoresA.find((j) => idsGoleirosFixos.has(j.id))?.id ?? goleirosPorEquipeSalvos[d.equipeA.id] ?? '',
+    [d.equipeB.id]: d.jogadoresB.find((j) => idsGoleirosFixos.has(j.id))?.id ?? goleirosPorEquipeSalvos[d.equipeB.id] ?? '',
+  };
 
   // Elementos fixos (atualizados a cada "tick", sem recriar a tela)
   const elTempo = h('div', { class: 'relogio', role: 'timer', 'aria-live': 'off' });
