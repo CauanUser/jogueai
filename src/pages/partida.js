@@ -20,14 +20,15 @@ const TEXTO_STATUS = {
   confirmada: 'Resultado confirmado',
   cancelada: 'Cancelada',
 };
-const MOTIVO_FIM = { tempo: 'acabou o tempo', gols: 'limite de gols atingido', manual: 'encerrada pelo organizador', sets: 'vitória por sets' };
+const MOTIVO_FIM = { tempo: 'tempo encerrado', gols: 'alvo de pontuação atingido', manual: 'encerrada pelo organizador', sets: 'vitória por sets' };
 
 function resumoRegras(p) {
   const partes = [];
   if (p.condicao_encerramento !== CONDICOES.GOLS) partes.push(formatarTempo(p.duracao_segundos * 1000));
-  if (p.condicao_encerramento === CONDICOES.PRIMEIRO) partes.push(`até ${p.limite_gols} gols ou fim do tempo`);
+  const unidade = p.configuracao_extra?.modalidade === 'futebol' ? 'gols' : 'pontos';
+  if (p.condicao_encerramento === CONDICOES.PRIMEIRO) partes.push(`${p.limite_gols} ${unidade} ou fim do tempo`);
   if (p.condicao_encerramento === CONDICOES.TEMPO) partes.push('só tempo');
-  if (p.condicao_encerramento === CONDICOES.GOLS) partes.push(`até ${p.limite_gols} gols`);
+  if (p.condicao_encerramento === CONDICOES.GOLS) partes.push(`alvo: ${p.limite_gols} ${unidade}`);
   if (p.acrescimos_segundos) partes.push(`+${p.acrescimos_segundos / 60} min de acréscimos`);
   if (p.intervalo_segundos) partes.push(`intervalo de ${p.intervalo_segundos / 60} min`);
   partes.push(p.desempate === 'penaltis' ? 'empate: pênaltis' : 'empate vale');
@@ -109,7 +110,7 @@ export async function render(el, { id }, ctx) {
   const equipeDe = (l) => (l === 'A' ? d.equipeA : d.equipeB);
   const jogadoresDe = (l) => (l === 'A' ? d.jogadoresA : d.jogadoresB);
 
-  // ---- Gols -----------------------------------------------------------
+  // ---- Pontuação por modalidade --------------------------------------
   async function marcarGol(ladoGol, b, valor = 1) {
     // No futebol registra autor/gol; nos demais esportes registra o valor do ponto.
     const momento = Date.now();
@@ -128,9 +129,9 @@ export async function render(el, { id }, ctx) {
         const autor = r.participanteId ? nomes.get(r.participanteId) : null;
         if (res.encerrou) {
           apitar();
-          toast(`${modalidade === 'futebol' ? 'Gol' : 'Ponto'}${autor ? ` de ${autor}` : ''}! Fim de partida.`, 'info', 5000);
+          toast(`${modalidade === 'futebol' ? 'Gol' : modalidade === 'basquete' ? 'Pontuação' : 'Ponto'}${autor ? ` de ${autor}` : ''}! Fim de partida.`, 'info', 5000);
         } else {
-          toast(`${modalidade === 'futebol' ? 'Gol' : 'Pontuação'} ${equipeDe(ladoGol).nome}${autor ? ` — ${autor}${r.tipo === 'contra' ? ' (contra)' : ''}` : ''}${modalidade === 'basquete' ? ` (+${valor})` : ''}. ${placar.a} × ${placar.b}`, 'info');
+          toast(`${modalidade === 'futebol' ? 'Gol' : modalidade === 'basquete' ? 'Cesta/ponto' : 'Ponto'} ${equipeDe(ladoGol).nome}${autor ? ` — ${autor}${r.tipo === 'contra' ? ' (contra)' : ''}` : ''}${modalidade === 'basquete' ? ` (+${valor})` : ''}. ${placar.a} × ${placar.b}`, 'info');
         }
         redesenhar();
       } catch (e) { toast(e.message, 'erro'); }
@@ -162,23 +163,23 @@ export async function render(el, { id }, ctx) {
     const editavel = podeLancarGols(d.partida);
     const itens = gols.map((g) => {
       const equipe = g.equipe_id === d.partida.equipe_a_id ? d.equipeA : d.equipeB;
-      const autor = g.participante_id ? (nomes.get(g.participante_id) ?? 'Jogador') : 'Sem autor';
+      const autor = g.participante_id ? (nomes.get(g.participante_id) ?? 'Jogador') : (modalidade === 'basquete' ? (Number(g.valor) === 1 ? 'Lance livre' : `Cesta de ${g.valor} pontos`) : modalidade === 'volei' ? 'Ponto' : 'Gol sem autor');
       const conteudo = [
-        h('span', { class: 'gol-minuto' }, minutoDoGol(g.tempo_partida_segundos)),
+        h('span', { class: 'gol-minuto' }, modalidade === 'volei' ? `${Number(g.set_numero ?? 1)}º set` : minutoDoGol(g.tempo_partida_segundos)),
         h('span', { class: 'equipe-cor', 'aria-hidden': 'true' }),
         h('span', { class: 'gol-texto' },
           h('strong', {}, autor), g.tipo === 'contra' ? h('span', { class: 'chip chip-alerta' }, 'contra') : null,
-          h('span', { class: 'item-sub' }, ` para ${equipe.nome}`)),
-        editavel ? icone('editar') : null,
+          h('span', { class: 'item-sub' }, modalidade === 'futebol' ? ` para ${equipe.nome}` : ` +${Number(g.valor ?? 1)} ${modalidade === 'basquete' ? 'ponto(s)' : 'ponto(s)'} para ${equipe.nome}`)),
+        editavel && modalidade === 'futebol' ? icone('editar') : null,
       ];
-      return h('li', { style: `--cor-equipe: ${equipe.cor}` }, editavel
+      return h('li', { style: `--cor-equipe: ${equipe.cor}` }, editavel && modalidade === 'futebol'
         ? h('button', { type: 'button', class: 'item-gol', 'aria-label': `Corrigir gol de ${autor}${g.tipo === 'contra' ? ' (contra)' : ''} para ${equipe.nome}, ${minutoDoGol(g.tempo_partida_segundos)}`, onClick: () => corrigirGol(g) }, conteudo)
         : h('div', { class: 'item-gol' }, conteudo));
     });
     elGols.hidden = gols.length === 0;
     elGols.replaceChildren(
-      h('h2', { id: 'tit-gols' }, modalidade === 'futebol' ? 'Gols' : modalidade === 'basquete' ? 'Cestas e pontos' : 'Pontos do set'),
-      editavel && modalidade === 'futebol' ? h('p', { class: 'ajuda' }, 'Toque em um gol para trocar o autor, marcar como contra ou remover.') : null,
+      h('h2', { id: 'tit-gols' }, modalidade === 'futebol' ? 'Gols da partida' : modalidade === 'basquete' ? 'Cestas e pontuação' : 'Pontos do set atual'),
+      editavel && modalidade === 'futebol' ? h('p', { class: 'ajuda' }, 'Toque em um gol para corrigir o autor, marcar como gol contra ou remover.') : modalidade !== 'futebol' ? h('p', { class: 'ajuda' }, 'Cada lançamento soma automaticamente o valor indicado ao placar da equipe.') : null,
       h('ol', { class: 'lista lista-gols' }, itens));
 
     elBotoesGol.replaceChildren(...(editavel
@@ -226,7 +227,7 @@ export async function render(el, { id }, ctx) {
       const btnConfirmar = botao('Confirmar resultado', 'btn-primario btn-grande', async (b) => {
         const ok = await confirmar({
           titulo: 'Confirmar o resultado?',
-          mensagem: `${d.equipeA.nome} ${placar.a} × ${placar.b} ${d.equipeB.nome}. ${textoVencedor} Depois de confirmado, os gols só mudam se você reabrir a partida.`,
+          mensagem: `${d.equipeA.nome} ${placar.a} × ${placar.b} ${d.equipeB.nome}. ${textoVencedor} Depois de confirmado, a pontuação só muda se você reabrir a partida.`,
           textoConfirmar: 'Confirmar',
         });
         if (ok) executar(b, () => ctx.partidas.confirmar(id), 'Resultado confirmado.');
@@ -243,7 +244,7 @@ export async function render(el, { id }, ctx) {
       }
     } else if (p.status === STATUS_PARTIDA.CONFIRMADA) {
       partes.push(botao('Reabrir para corrigir', 'btn-secundario', async (b) => {
-        const ok = await confirmar({ titulo: 'Reabrir o resultado?', mensagem: 'Você poderá corrigir gols e pênaltis. Depois, confirme de novo.', textoConfirmar: 'Reabrir' });
+        const ok = await confirmar({ titulo: 'Reabrir o resultado?', mensagem: 'Você poderá corrigir o resultado. Depois, confirme de novo.', textoConfirmar: 'Reabrir' });
         if (ok) executar(b, () => ctx.partidas.reabrir(id), 'Resultado reaberto para correção.');
       }));
     }
@@ -290,7 +291,7 @@ export async function render(el, { id }, ctx) {
           titulo: 'Cancelar esta partida?',
           mensagem: p.status === STATUS_PARTIDA.CONFIGURADA
             ? 'A partida será apagada.'
-            : 'A partida fica registrada como cancelada e não conta para nada (nem os gols).',
+            : 'A partida fica registrada como cancelada e não conta para nada (nem a pontuação).',
           textoConfirmar: 'Cancelar partida', perigo: true,
         });
         if (!ok) return;
