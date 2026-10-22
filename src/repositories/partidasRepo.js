@@ -6,6 +6,7 @@ import {
   STATUS_PARTIDA, LIMITES, validarConfiguracao, partidaAtiva, relogioDaPartida, avaliarEventoAutomatico,
 } from '../domain/partida.js';
 import { ErroDeNegocio } from './sessoesRepo.js';
+import { setVencido } from '../domain/modalidades.js';
 import {
   TIPO_GOL, placar as calcularPlacar, validarGol, equipeDoLado, ladoDaEquipe, ordenarGols,
   precisaPenaltis, validarPenaltis, pendenciaParaConfirmar,
