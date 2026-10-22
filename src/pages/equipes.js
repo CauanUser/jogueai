@@ -4,6 +4,7 @@ import { participantesEditaveis } from '../domain/sessao.js';
 import { avaliarSomas } from '../domain/sorteio.js';
 import { formatarDataReferencia, formatarHora } from '../utils/datas.js';
 import { partidaAtiva } from '../domain/partida.js';
+import { toast } from '../components/toast.js';
 
 const chaveGoleirosFixos = (id) => `goleiros_fixos:${id}`;
 const chaveGoleirosEquipe = (id) => `goleiros_por_equipe:${id}`;
