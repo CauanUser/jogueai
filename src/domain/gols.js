@@ -18,8 +18,8 @@ export function placar(p, gols) {
   let a = 0; let b = 0;
   for (const g of gols) {
     if (g.partida_id !== undefined && g.partida_id !== p.id) continue;
-    if (g.equipe_id === p.equipe_a_id) a++;
-    else if (g.equipe_id === p.equipe_b_id) b++;
+    if (g.equipe_id === p.equipe_a_id) a += Number(g.valor ?? 1);
+    else if (g.equipe_id === p.equipe_b_id) b += Number(g.valor ?? 1);
   }
   return { a, b };
 }
