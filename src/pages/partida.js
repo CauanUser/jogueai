@@ -6,7 +6,7 @@ import { stepper } from '../components/stepper.js';
 import { perguntarAutor } from '../components/seletorGol.js';
 import { apitar, prepararAudio, criarTelaAcesa } from '../components/alerta.js';
 import { formatarTempo, formatarRestante } from '../domain/cronometro.js';
-import { normalizarModalidade, regraDaModalidade, validarValor } from '../domain/modalidades.js';
+import { normalizarModalidade, regraDaModalidade, validarValor, avaliarVolei } from '../domain/modalidades.js';
 import { STATUS_PARTIDA, CONDICOES, situacaoTempo, avaliarEventoAutomatico, partidaAtiva, tempoTotalMs } from '../domain/partida.js';
 import {
   podeLancarGols, ladoDaEquipe, outroLado, precisaPenaltis, pendenciaParaConfirmar, vencedor, minutoDoGol,
@@ -20,7 +20,7 @@ const TEXTO_STATUS = {
   confirmada: 'Resultado confirmado',
   cancelada: 'Cancelada',
 };
-const MOTIVO_FIM = { tempo: 'tempo encerrado', gols: 'meta de pontuação atingida', manual: 'encerrada pelo organizador' };
+const MOTIVO_FIM = { tempo: 'tempo encerrado', gols: 'meta de pontuação atingida', zerou: 'vitória no ZEROU', manual: 'encerrada pelo organizador' };
 
 function resumoRegras(p) {
   if (p.configuracao_extra?.modalidade === 'volei') return `Vôlei · meta de ${p.limite_gols} pontos · sem cronômetro`;
@@ -61,6 +61,7 @@ export async function render(el, { id }, ctx) {
   const elControles = h('div', { class: 'controles-partida' });
   const elPlacar = h('div', { class: 'placar-numeros', 'aria-live': 'polite' });
   const elPenaltisPlacar = h('div', { class: 'placar-penaltis' });
+  const elZerou = h('div', { class: 'cartao aviso zerou-status', 'aria-live': 'polite', hidden: true });
   const elSets = h('p', { class: 'texto-suave placar-sets', 'aria-live': 'polite' });
   const elGols = h('section', { class: 'cartao lista-gols-cartao', 'aria-labelledby': 'tit-gols' });
   const elFim = h('div');
@@ -73,7 +74,7 @@ export async function render(el, { id }, ctx) {
     h('span', { class: 'equipe-cor', 'aria-hidden': 'true' }), h('span', { class: 'placar-nome' }, equipe.nome));
   const placarCartao = h('section', { class: 'cartao placar', 'aria-label': 'Placar' },
     h('div', { class: 'placar-linha' }, lado(d.equipeA, 'lado-a'), elPlacar, lado(d.equipeB, 'lado-b')),
-    elPenaltisPlacar, elSets, elTempo, elRotuloTempo, elStatus);
+    elPenaltisPlacar, elSets, elZerou, elTempo, elRotuloTempo, elStatus);
 
   const escalacao = (equipe, jogadores) => h('div', { class: 'escalacao', style: `--cor-equipe: ${equipe.cor}` },
     h('h3', {}, equipe.nome),
@@ -199,19 +200,21 @@ export async function render(el, { id }, ctx) {
   function cartaoResultado() {
     const p = d.partida;
     const motivo = p.configuracao_extra?.motivo_fim;
-    const v = vencedor(p, placar);
+    const estadoVolei = modalidade === 'volei' ? avaliarVolei(gols, p) : null;
+    const v = estadoVolei?.vencedor ?? vencedor(p, placar);
     const textoVencedor = motivo === 'manual'
       ? (placar.a === placar.b ? 'Partida encerrada manualmente com empate no placar.' : `Partida encerrada manualmente; ${equipeDe(v).nome} estava à frente, sem vitória automática declarada.`)
-      : v === 'empate' ? 'Empate.' : `Vitória do ${equipeDe(v).nome}${modalidade !== 'volei' && p.penaltis_a !== null && placar.a === placar.b ? ' nos pênaltis' : ''}.`;
+      : v === 'empate' ? 'Empate.' : `Vitória do ${equipeDe(v).nome}${motivo === 'zerou' ? ' no ZEROU' : modalidade !== 'volei' && p.penaltis_a !== null && placar.a === placar.b ? ' nos pênaltis' : ''}.`;
     const partes = [
       h('h2', {}, p.status === STATUS_PARTIDA.CONFIRMADA ? 'Resultado confirmado' : 'Fim de jogo'),
       h('p', { class: 'resultado-linha' }, `${d.equipeA.nome} ${placar.a} × ${placar.b} ${d.equipeB.nome}${motivo ? ` — ${MOTIVO_FIM[motivo] ?? motivo}` : ''}.`),
       h('p', { class: 'resultado-vencedor' }, textoVencedor),
+      modalidade === 'volei' && estadoVolei?.zerou ? h('p', { class: 'resultado-linha' }, `ZEROU: ${estadoVolei.zerouA} × ${estadoVolei.zerouB}`) : null,
       modalidade !== 'volei' ? h('p', { class: 'texto-suave' }, `Tempo jogado: ${formatarTempo(p.relogio_acumulado_ms)}.`) : null,
     ];
 
     if (p.status === STATUS_PARTIDA.FINALIZADA) {
-      if (precisaPenaltis(p, placar)) {
+      if (modalidade !== 'volei' && precisaPenaltis(p, placar)) {
         let pa = p.penaltis_a ?? 0;
         let pb = p.penaltis_b ?? 0;
         const stA = stepper({ id: 'pen-a', rotulo: `Pênaltis ${d.equipeA.nome}`, valor: pa, min: 0, max: 30, aoMudar: (x) => { pa = x; } });
@@ -330,7 +333,14 @@ export async function render(el, { id }, ctx) {
     const agora = Date.now();
     const s = situacaoTempo(p, agora);
     elPlacar.textContent = `${placar.a} × ${placar.b}`;
-    elPenaltisPlacar.textContent = p.penaltis_a !== null && p.penaltis_a !== undefined ? `pênaltis ${p.penaltis_a} × ${p.penaltis_b}` : '';
+    elPenaltisPlacar.textContent = modalidade !== 'volei' && p.penaltis_a !== null && p.penaltis_a !== undefined ? `pênaltis ${p.penaltis_a} × ${p.penaltis_b}` : '';
+    const estadoVolei = modalidade === 'volei' ? avaliarVolei(gols, p) : null;
+    elZerou.hidden = modalidade !== 'volei' || !estadoVolei?.zerou || p.status === STATUS_PARTIDA.CONFIGURADA;
+    elZerou.replaceChildren();
+    if (!elZerou.hidden) {
+      elZerou.append(h('strong', {}, 'ZEROU'), h('p', {}, `Placar do ZEROU: ${estadoVolei.zerouA} × ${estadoVolei.zerouB}`),
+        h('p', {}, estadoVolei.vencedor ? `Vitória do ${equipeDe(estadoVolei.vencedor).nome}!` : 'Empatou? Volta para 0 × 0. Quem abrir 2 pontos primeiro vence.'));
+    }
     elTempo.hidden = modalidade === 'volei';
     elRotuloTempo.hidden = modalidade === 'volei';
     elSets.hidden = true;
