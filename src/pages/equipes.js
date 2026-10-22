@@ -5,6 +5,9 @@ import { avaliarSomas } from '../domain/sorteio.js';
 import { formatarDataReferencia, formatarHora } from '../utils/datas.js';
 import { partidaAtiva } from '../domain/partida.js';
 
+const chaveGoleirosFixos = (id) => `goleiros_fixos:${id}`;
+const chaveGoleirosEquipe = (id) => `goleiros_por_equipe:${id}`;
+
 const STATUS_CURTO = { configurada: 'a começar', em_andamento: 'em andamento', pausada: 'pausada', finalizada: 'encerrada · falta confirmar', confirmada: 'resultado confirmado', cancelada: 'cancelada' };
 
 export async function render(el, { id }, ctx) {
@@ -33,7 +36,58 @@ export async function render(el, { id }, ctx) {
     `Sorteio nº ${sorteio.numero} · confirmado às ${formatarHora(sorteio.confirmado_em)} · diferença entre as somas: ${amplitude}`,
     pendentes.has(sorteio.id) ? h('span', { class: 'pendente' }, ' • pendente') : null));
 
-  el.append(h('div', { class: 'grade-equipes' }, equipes.map(cartaoEquipe), cartaoAguardando(aguardando)));
+  const participantes = await ctx.participantes.listarPorSessao(id);
+  const cfgFixos = await ctx.store.obterMeta(chaveGoleirosFixos(id));
+  const idsFixos = new Set([
+    ...(cfgFixos?.quantidade >= 1 && cfgFixos.goleiroEsquerdoId ? [cfgFixos.goleiroEsquerdoId] : []),
+    ...(cfgFixos?.quantidade === 2 && cfgFixos.goleiroDireitoId ? [cfgFixos.goleiroDireitoId] : []),
+  ]);
+  const metaGoleiros = await ctx.store.obterMeta(chaveGoleirosEquipe(id)) ?? {};
+  const goleiros = {};
+  for (const equipe of equipes) {
+    const fixoNoTime = equipe.jogadores.find((p) => idsFixos.has(p.id));
+    const salvo = equipe.jogadores.find((p) => p.id === metaGoleiros[equipe.id]);
+    goleiros[equipe.id] = fixoNoTime?.id ?? salvo?.id ?? '';
+  }
+
+  const gradeEquipes = h('div', { class: 'grade-equipes' });
+  const areaGoleiros = h('section', { class: 'cartao formulario', 'aria-label': 'Escolher goleiros' });
+  async function salvarGoleiros() {
+    await ctx.store.definirMeta(chaveGoleirosEquipe(id), goleiros);
+  }
+  function desenharEquipesComGoleiros() {
+    const controles = equipes.map((equipe) => {
+      const fixoNoTime = equipe.jogadores.find((p) => idsFixos.has(p.id));
+      const select = h('select', { class: 'campo', 'aria-label': `Goleiro do ${equipe.nome}`, disabled: Boolean(fixoNoTime) || !editavel },
+        h('option', { value: '' }, 'Escolher goleiro'),
+        ...equipe.jogadores.map((p) => h('option', { value: p.id }, p.nome)));
+      select.value = goleiros[equipe.id] ?? '';
+      select.addEventListener('change', async () => {
+        goleiros[equipe.id] = select.value;
+        try { await salvarGoleiros(); desenharEquipesComGoleiros(); }
+        catch (e) { toast(e.message, 'erro'); }
+      });
+      const btnSorteio = h('button', { type: 'button', class: 'btn btn-secundario', disabled: Boolean(fixoNoTime) || !editavel }, 'Sortear goleiro');
+      btnSorteio.addEventListener('click', async () => {
+        const opcoes = equipe.jogadores.filter((p) => p.id !== goleiros[equipe.id]);
+        if (!opcoes.length) { toast('Não há outro jogador disponível para sortear.', 'erro'); return; }
+        const escolhido = opcoes[Math.floor(Math.random() * opcoes.length)];
+        goleiros[equipe.id] = escolhido.id;
+        try { await salvarGoleiros(); desenharEquipesComGoleiros(); toast(`${escolhido.nome} será o goleiro do ${equipe.nome}.`); }
+        catch (e) { toast(e.message, 'erro'); }
+      });
+      return h('div', { class: 'formulario' },
+        h('label', { class: 'rotulo-campo' }, `${equipe.nome}${fixoNoTime ? ' · goleiro fixo' : ''}`, select),
+        fixoNoTime ? h('p', { class: 'ajuda' }, `${fixoNoTime.nome} foi definido como goleiro fixo no cadastro do sorteio.`) : btnSorteio);
+    });
+    areaGoleiros.replaceChildren(
+      h('h2', {}, 'Goleiros dos times'),
+      h('p', { class: 'ajuda' }, 'Os goleiros fixos são identificados automaticamente. Para os outros times, escolha um jogador ou sorteie um goleiro.'),
+      ...controles);
+    gradeEquipes.replaceChildren(...equipes.map((e) => cartaoEquipe({ ...e, goleiroId: goleiros[e.id] })), cartaoAguardando(aguardando));
+  }
+  desenharEquipesComGoleiros();
+  el.append(areaGoleiros, gradeEquipes);
 
   // Partidas da sessão
   const partidas = await ctx.partidas.listarPorSessao(id);
