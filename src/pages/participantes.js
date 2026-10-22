@@ -10,7 +10,7 @@ import { NOME_MAX } from '../domain/validacao.js';
 const NOTA_INICIAL = 5;
 
 /** Campos nome + nota reutilizados no cadastro e na edição. */
-function camposParticipante({ prefixo, nome = '', nota = NOTA_INICIAL }) {
+function camposParticipante({ prefixo, nome = '', nota = NOTA_INICIAL, mostrarGoleiro = false, goleiro = false }) {
   const erroNome = h('p', { class: 'erro-campo', id: `${prefixo}-erro-nome`, 'aria-live': 'polite' });
   const erroNota = h('p', { class: 'erro-campo', id: `${prefixo}-erro-nota`, 'aria-live': 'polite' });
   const inputNome = h('input', {
@@ -19,6 +19,8 @@ function camposParticipante({ prefixo, nome = '', nota = NOTA_INICIAL }) {
     'aria-describedby': `${prefixo}-erro-nome`,
   });
   const seletor = seletorNota({ valor: nota, idRotulo: `${prefixo}-rotulo-nota` });
+  const inputGoleiro = mostrarGoleiro ? h('input', { id: `${prefixo}-goleiro`, type: 'checkbox', checked: Boolean(goleiro) }) : null;
+  const campoGoleiro = mostrarGoleiro ? h('label', { class: 'opcao-goleiro', for: `${prefixo}-goleiro` }, inputGoleiro, ' É goleiro') : null;
   return {
     inputNome,
     seletor,
@@ -27,19 +29,20 @@ function camposParticipante({ prefixo, nome = '', nota = NOTA_INICIAL }) {
       inputNome, erroNome,
       h('p', { id: `${prefixo}-rotulo-nota`, class: 'rotulo-campo' }, 'Nota de habilidade (1 a 10)'),
       seletor.el, erroNota,
+      ...(campoGoleiro ? [campoGoleiro] : []),
     ],
     mostrarErros(erros = {}) {
       erroNome.textContent = erros.nome ?? '';
       erroNota.textContent = erros.nota ?? '';
       inputNome.toggleAttribute('aria-invalid', Boolean(erros.nome));
     },
-    valores: () => ({ nome: inputNome.value, nota: seletor.valor() }),
+    valores: () => ({ nome: inputNome.value, nota: seletor.valor(), ...(inputGoleiro ? { goleiro: inputGoleiro.checked } : {}) }),
   };
 }
 
 function editarParticipante(ctx, p, mostrarGoleiro = false) {
   return abrirDialogo((fechar) => {
-    const campos = camposParticipante({ prefixo: 'editar', nome: p.nome, nota: p.nota });
+    const campos = camposParticipante({ prefixo: 'editar', nome: p.nome, nota: p.nota, mostrarGoleiro, goleiro: p.goleiro });
     campos.inputNome.setAttribute('autofocus', '');
     const btnSalvar = h('button', { class: 'btn btn-primario', type: 'submit' }, 'Salvar');
     const form = h('form', { class: 'dialogo-corpo', novalidate: true },
