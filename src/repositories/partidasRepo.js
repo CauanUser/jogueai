@@ -362,7 +362,21 @@ export function criarPartidasRepo({ store, aoGravar = () => {} }) {
           enfileirar(h[STORES.OUTBOX], { tabela: 'gols', acao: 'delete', registroId: golId });
         });
         aoGravar();
-        const pl = calcularPlacar(p, await golsDaPartida(p));
+        const eventosRestantes = await golsDaPartida(p);
+        const pl = calcularPlacar(p, eventosRestantes);
+        if (p.configuracao_extra?.modalidade === 'volei' && p.status === STATUS_PARTIDA.FINALIZADA &&
+            ['gols', 'zerou'].includes(p.configuracao_extra?.motivo_fim)) {
+          const estado = avaliarVolei(eventosRestantes, p);
+          if (!estado.vencedor) {
+            const { motivo_fim: _motivoFim, ...extra } = p.configuracao_extra ?? {};
+            await gravar({
+              ...comRelogio(p, pausarRelogio(relogioDaPartida(p), Date.now())),
+              status: STATUS_PARTIDA.PAUSADA,
+              ended_at: null,
+              configuracao_extra: extra,
+            });
+          }
+        }
         await ajustarPenaltis(p, pl);
         return pl;
       });
