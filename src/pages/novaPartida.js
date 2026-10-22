@@ -92,7 +92,7 @@ export async function render(el, { id }, ctx) {
     }, `${m} min`)));
 
   const stGols = stepper({
-    id: 'alvo-pontuacao', rotulo: modalidade === 'futebol' ? 'Gols necessários para encerrar' : 'Pontos necessários para encerrar', valor: cfg.limite_gols ?? (modalidade === 'basquete' ? 21 : 2), min: 1, max: 999,
+    id: 'alvo-pontuacao', rotulo: modalidade === 'futebol' ? 'Gols necessários para encerrar' : 'Pontos necessários para encerrar', valor: cfg.limite_gols ?? (modalidade === 'basquete' ? 21 : 2), min: 1, max: 99,
     aoMudar: (v) => { cfg.limite_gols = v; },
   });
   const blocoGols = h('div', {}, stGols.el);
