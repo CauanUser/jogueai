@@ -49,6 +49,11 @@ export function criarRodizioRepo({ store, sorteios, partidas, aoGravar = () => {
       throw new ErroDeNegocio('As equipes desta partida não pertencem ao sorteio atual. Verifique se houve um novo sorteio.');
     }
     const participantes = await store.listarPorIndice(STORES.PARTICIPANTES, 'sessao_id', sessaoId);
+    const configGoleiros = await store.obterMeta(`goleiros_fixos:${sessaoId}`);
+    const idsGoleirosFixos = new Set([
+      ...(configGoleiros?.quantidade >= 1 && configGoleiros.goleiroEsquerdoId ? [configGoleiros.goleiroEsquerdoId] : []),
+      ...(configGoleiros?.quantidade === 2 && configGoleiros.goleiroDireitoId ? [configGoleiros.goleiroDireitoId] : []),
+    ]);
     const eventos = await eventosDaSessao(sessaoId);
     // A última saída da fila define a nova posição; uma entrada posterior apaga essa marca.
     const aguardandoDesde = new Map();
@@ -61,13 +66,15 @@ export function criarRodizioRepo({ store, sorteios, partidas, aoGravar = () => {
       if (evento.participante_saiu_id) aguardandoDesde.set(evento.participante_saiu_id, evento.created_at);
     }
     const ativos = new Set([...equipeVencedora.jogadores, ...equipePerdedora.jogadores].map((p) => p.id));
+    // Goleiros fixos ocupam o lado físico designado mesmo se a equipe de origem aguarda.
+    idsGoleirosFixos.forEach((id) => ativos.add(id));
     const aguardando = participantes
       .filter((p) => !ativos.has(p.id))
       .sort((a, b) => String(aguardandoDesde.get(a.id) ?? a.created_at ?? '')
         .localeCompare(String(aguardandoDesde.get(b.id) ?? b.created_at ?? '')));
     const eventosPartida = eventos.filter((e) => e.partida_id === partidaId);
     const encerradoSemTroca = eventosPartida.some((e) => ['sem_substituicao', 'encerrado'].includes(e.tipo));
-    return { partida, placar: pl, ladoVencedor, equipeVencedora, equipePerdedora, atual: { ...atual, aguardando }, eventos: eventosPartida, encerradoSemTroca };
+    return { partida, placar: pl, ladoVencedor, equipeVencedora, equipePerdedora, configGoleiros: configGoleiros ?? { quantidade: 0 }, atual: { ...atual, aguardando }, eventos: eventosPartida, encerradoSemTroca };
   }
 
   return {
