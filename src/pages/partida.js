@@ -6,6 +6,7 @@ import { stepper } from '../components/stepper.js';
 import { perguntarAutor } from '../components/seletorGol.js';
 import { apitar, prepararAudio, criarTelaAcesa } from '../components/alerta.js';
 import { formatarTempo, formatarRestante } from '../domain/cronometro.js';
+import { normalizarModalidade, regraDaModalidade, validarValor } from '../domain/modalidades.js';
 import { STATUS_PARTIDA, CONDICOES, situacaoTempo, avaliarEventoAutomatico, partidaAtiva, tempoTotalMs } from '../domain/partida.js';
 import {
   podeLancarGols, ladoDaEquipe, outroLado, precisaPenaltis, pendenciaParaConfirmar, vencedor, minutoDoGol,
@@ -41,6 +42,9 @@ export async function render(el, { id }, ctx) {
     return;
   }
   const sessaoId = d.partida.sessao_id;
+  const configSessao = await ctx.store.obterMeta('sessao_config_' + sessaoId) ?? { modalidade: 'futebol' };
+  const modalidade = normalizarModalidade(configSessao.modalidade);
+  const regraEsporte = regraDaModalidade(modalidade);
   const telaAcesa = criarTelaAcesa();
   let gols = await ctx.partidas.gols(id);
   let placar = await ctx.partidas.placar(id);
@@ -104,11 +108,17 @@ export async function render(el, { id }, ctx) {
   const jogadoresDe = (l) => (l === 'A' ? d.jogadoresA : d.jogadoresB);
 
   // ---- Gols -----------------------------------------------------------
-  async function marcarGol(ladoGol, b) {
-    // O minuto é o do toque no botão, não o de quando o autor é escolhido.
+  async function marcarGol(ladoGol, b, valor = 1) {
+    // No futebol registra autor/gol; nos demais esportes registra o valor do ponto.
     const momento = Date.now();
-    const r = await perguntarAutor({ equipe: equipeDe(ladoGol), doTime: jogadoresDe(ladoGol), adversarios: jogadoresDe(outroLado(ladoGol)) });
-    if (!r) return;
+    let r = { participanteId: null, tipo: 'normal', valor };
+    if (modalidade === 'futebol') {
+      r = await perguntarAutor({ equipe: equipeDe(ladoGol), doTime: jogadoresDe(ladoGol), adversarios: jogadoresDe(outroLado(ladoGol)) });
+      if (!r) return;
+      r.valor = 1;
+    } else if (validarValor(modalidade, valor)) {
+      toast(validarValor(modalidade, valor), 'erro'); return;
+    }
     await comBotaoOcupado(b, async () => {
       try {
         const res = await ctx.partidas.registrarGol(id, { lado: ladoGol, ...r }, momento);
@@ -116,9 +126,9 @@ export async function render(el, { id }, ctx) {
         const autor = r.participanteId ? nomes.get(r.participanteId) : null;
         if (res.encerrou) {
           apitar();
-          toast(`Gol${autor ? ` de ${autor}` : ''}! Fim de jogo — ${MOTIVO_FIM.gols}.`, 'info', 5000);
+          toast(`${modalidade === 'futebol' ? 'Gol' : 'Ponto'}${autor ? ` de ${autor}` : ''}! Fim de partida.`, 'info', 5000);
         } else {
-          toast(`Gol do ${equipeDe(ladoGol).nome}${autor ? ` — ${autor}${r.tipo === 'contra' ? ' (contra)' : ''}` : ''}. ${placar.a} × ${placar.b}`, 'info');
+          toast(`${modalidade === 'futebol' ? 'Gol' : 'Pontuação'} ${equipeDe(ladoGol).nome}${autor ? ` — ${autor}${r.tipo === 'contra' ? ' (contra)' : ''}` : ''}${modalidade === 'basquete' ? ` (+${valor})` : ''}. ${placar.a} × ${placar.b}`, 'info');
         }
         redesenhar();
       } catch (e) { toast(e.message, 'erro'); }
@@ -165,17 +175,18 @@ export async function render(el, { id }, ctx) {
     });
     elGols.hidden = gols.length === 0;
     elGols.replaceChildren(
-      h('h2', { id: 'tit-gols' }, 'Gols'),
-      editavel ? h('p', { class: 'ajuda' }, 'Toque em um gol para trocar o autor, marcar como contra ou remover.') : null,
+      h('h2', { id: 'tit-gols' }, modalidade === 'futebol' ? 'Gols' : modalidade === 'basquete' ? 'Cestas e pontos' : 'Pontos do set'),
+      editavel && modalidade === 'futebol' ? h('p', { class: 'ajuda' }, 'Toque em um gol para trocar o autor, marcar como contra ou remover.') : null,
       h('ol', { class: 'lista lista-gols' }, itens));
 
     elBotoesGol.replaceChildren(...(editavel
-      ? ['A', 'B'].map((l) => {
+      ? ['A', 'B'].flatMap((l) => (modalidade === 'basquete' ? [1, 2, 3] : [1]).map((valor) => {
+        const rotulo = modalidade === 'futebol' ? 'Gol' : modalidade === 'basquete' ? (valor === 1 ? 'Lance livre' : valor === 2 ? 'Cesta de 2' : 'Cesta de 3') : 'Ponto';
         const b = h('button', { type: 'button', class: 'btn btn-gol', style: `--cor-equipe: ${equipeDe(l).cor}` },
-          icone('bola'), h('span', {}, d.partida.status === STATUS_PARTIDA.FINALIZADA ? `+ gol ${equipeDe(l).nome}` : `Gol ${equipeDe(l).nome}`));
-        b.addEventListener('click', () => marcarGol(l, b));
+          icone('bola'), h('span', {}, `${rotulo} · ${equipeDe(l).nome}${modalidade === 'basquete' ? ` (+${valor})` : ''}`));
+        b.addEventListener('click', () => marcarGol(l, b, valor));
         return b;
-      })
+      }))
       : []));
     elBotoesGol.classList.toggle('botoes-gol-correcao', d.partida.status === STATUS_PARTIDA.FINALIZADA);
   }
