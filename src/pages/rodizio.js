@@ -19,7 +19,11 @@ export async function render(el, { id, partidaId }, ctx) {
 
   let saiId = '';
   let entraId = '';
-  const configGoleiros = await ctx.store.obterMeta(`goleiros_fixos:${id}`);
+  const configGoleiros = estado.configGoleiros ?? await ctx.store.obterMeta(`goleiros_fixos:${id}`);
+  const idsGoleirosFixos = new Set([
+    ...(configGoleiros?.quantidade >= 1 && configGoleiros.goleiroEsquerdoId ? [configGoleiros.goleiroEsquerdoId] : []),
+    ...(configGoleiros?.quantidade === 2 && configGoleiros.goleiroDireitoId ? [configGoleiros.goleiroDireitoId] : []),
+  ]);
   const participantesSessao = await ctx.participantes.listarPorSessao(id);
   const nomeParticipante = new Map(participantesSessao.map((p) => [p.id, p.nome]));
   const nomePorId = new Map([...estado.atual.equipes.flatMap((e) => e.jogadores), ...estado.atual.aguardando].map((p) => [p.id, p.nome]));
@@ -63,7 +67,7 @@ export async function render(el, { id, partidaId }, ctx) {
   function cartaoEquipe(equipe, destaque = false) {
     return h('section', { class: `cartao rodizio-equipe${destaque ? ' rodizio-perdedora' : ''}`, style: `--cor-equipe: ${equipe.cor}` },
       h('h2', {}, equipe.nome, destaque ? ' · recebe substituições' : ' · permanece'),
-      h('ul', { class: 'lista' }, equipe.jogadores.map((p) => h('li', { class: 'item-lista' },
+      h('ul', { class: 'lista' }, equipe.jogadores.filter((p) => !idsGoleirosFixos.has(p.id)).map((p) => h('li', { class: 'item-lista' },
         h('span', { class: 'item-titulo' }, p.nome)))));
   }
 
@@ -76,7 +80,7 @@ export async function render(el, { id, partidaId }, ctx) {
           h('span', { class: 'item-titulo' }, p.nome),
           h('span', { class: 'item-sub' }, `Posição ${i + 1}`))))
         : h('p', { class: 'ajuda' }, 'Não há jogadores aguardando fora dos dois times desta partida.'));
-    const opcoesSai = [h('option', { value: '' }, 'Selecione quem sai'), ...estado.equipePerdedora.jogadores.map((p) => h('option', { value: p.id }, p.nome))];
+    const opcoesSai = [h('option', { value: '' }, 'Selecione quem sai'), ...estado.equipePerdedora.jogadores.filter((p) => !idsGoleirosFixos.has(p.id)).map((p) => h('option', { value: p.id }, p.nome))];
     const opcoesEntra = [h('option', { value: '' }, 'Selecione quem entra'), ...estado.atual.aguardando.map((p) => h('option', { value: p.id }, p.nome))];
     const selSai = h('select', { class: 'campo', 'aria-label': 'Jogador que sairá' }, opcoesSai);
     const selEntra = h('select', { class: 'campo', 'aria-label': 'Jogador que entrará' }, opcoesEntra);
