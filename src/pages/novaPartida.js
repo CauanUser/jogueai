@@ -112,9 +112,9 @@ export async function render(el, { id }, ctx) {
   };
   const condicao = h('fieldset', { class: 'grupo-radio' },
     h('legend', { class: 'rotulo-campo' }, 'A partida termina'),
-    radio('condicao', CONDICOES.PRIMEIRO, 'No limite de gols ou no fim do tempo (o que vier primeiro)', cfg.condicao_encerramento, escolherCondicao),
-    radio('condicao', CONDICOES.TEMPO, 'Só no fim do tempo', cfg.condicao_encerramento, escolherCondicao),
-    radio('condicao', CONDICOES.GOLS, 'Só no limite de gols (sem tempo)', cfg.condicao_encerramento, escolherCondicao));
+    radio('condicao', CONDICOES.PRIMEIRO, (modalidade === 'futebol' ? 'Ao atingir o limite de gols ou acabar o tempo' : 'Ao atingir o alvo de pontos ou acabar o tempo'), cfg.condicao_encerramento, escolherCondicao),
+    radio('condicao', CONDICOES.TEMPO, (modalidade === 'volei' ? 'Melhor de 5 sets (25 pontos; set decisivo a 15)' : 'Somente ao acabar o tempo'), cfg.condicao_encerramento, escolherCondicao),
+    radio('condicao', CONDICOES.GOLS, (modalidade === 'futebol' ? 'Somente ao atingir o limite de gols' : 'Somente ao atingir o alvo de pontos'), cfg.condicao_encerramento, escolherCondicao));
   atualizarGols();
 
   const minutos = (s) => (s === 0 ? 'Não' : `${s / 60} min`);
@@ -130,6 +130,7 @@ export async function render(el, { id }, ctx) {
     h('legend', { class: 'rotulo-campo' }, 'Empate no fim do tempo'),
     radio('desempate', 'penaltis', 'Disputa de pênaltis (registrada à mão)', cfg.desempate, (v) => { cfg.desempate = v; }),
     radio('desempate', 'nenhum', 'Fica empatado', cfg.desempate, (v) => { cfg.desempate = v; }));
+  empate.hidden = modalidade !== 'futebol';
 
   const salvarPadrao = h('input', { type: 'checkbox', id: 'salvar-padrao' });
   const btnCriar = h('button', { class: 'btn btn-primario btn-grande', type: 'button' }, 'Criar partida');
@@ -154,9 +155,9 @@ export async function render(el, { id }, ctx) {
       h('h2', { id: 'tit-equipes' }, 'Quem joga'), grade, infoEquipes),
     h('section', { class: 'cartao formulario', 'aria-labelledby': 'tit-regras' },
       h('h2', { id: 'tit-regras' }, 'Regras desta partida'),
-      h('p', { class: 'ajuda' }, modalidade === 'futebol' ? 'Futebol: gols, tempo e pênaltis conforme a regra escolhida.' : modalidade === 'basquete' ? 'Basquete: placar por pontos; cada lance livre vale 1, cesta comum 2 e cesta de três 3. A partida termina pelo tempo.' : 'Vôlei: cada ponto vale 1; o set exige atingir o limite com vantagem de 2 pontos. O jogo é decidido por sets.'),
-      stDuracao.el, rapidas, condicao, blocoGols, stAcrescimos.el, stIntervalo.el,
-      h('p', { class: 'ajuda' }, 'Com intervalo, o cronômetro pausa sozinho na metade do tempo.'),
+      h('p', { class: 'ajuda' }, modalidade === 'futebol' ? 'Futebol: cada gol vale 1. Escolha alvo de gols, tempo ou o que acontecer primeiro.' : modalidade === 'basquete' ? 'Basquete: lance livre = 1, cesta comum = 2 e cesta de três = 3. Defina um alvo de pontos, o tempo ou ambos.' : 'Vôlei: pontos por rally, sets de 25 (set decisivo de 15), vantagem mínima de 2; vence quem ganhar 3 sets.'),
+      modalidade !== 'volei' ? stDuracao.el : null, modalidade !== 'volei' ? rapidas : null, condicao, blocoGols, modalidade === 'futebol' ? stAcrescimos.el : null, modalidade === 'futebol' ? stIntervalo.el : null,
+      modalidade === 'futebol' ? h('p', { class: 'ajuda' }, 'Com intervalo, o cronômetro pausa sozinho na metade do tempo.') : null,
       empate,
       h('label', { class: 'opcao-check', for: 'salvar-padrao' }, salvarPadrao,
         h('span', {}, 'Usar estas regras como padrão das próximas partidas'))),
