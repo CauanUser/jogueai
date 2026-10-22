@@ -9,6 +9,7 @@ import { formatarDataReferencia } from '../utils/datas.js';
 
 const PADRAO_POR_EQUIPE = 5;
 const chaveRascunho = (id) => `rascunho_sorteio:${id}`;
+const chaveGoleirosFixos = (id) => `goleiros_fixos:${id}`;
 
 /** Rascunho só vale se a lista de participantes (ids e notas) não mudou. */
 function assinatura(participantes) {
@@ -40,6 +41,9 @@ export async function render(el, { id }, ctx) {
     qtdEquipes: null, // null = automático
     modoEspera: 'ultimos',
     resultado: null,
+    quantidadeGoleirosFixos: 0,
+    goleiroEsquerdoId: '',
+    goleiroDireitoId: '',
   };
 
   // Recupera um rascunho (sorteio feito e ainda não confirmado).
@@ -48,6 +52,39 @@ export async function render(el, { id }, ctx) {
 
   const salvarRascunho = () => ctx.store.definirMeta(chaveRascunho(id),
     estado.resultado ? { assinatura: assinatura(participantes), estado } : null);
+
+  // Goleiros fixos são vinculados a lados físicos e não alteram o sorteio.
+  const cfgGoleiros = h('fieldset', { class: 'grupo-radio' });
+  const selQuantidadeGoleiros = h('select', { class: 'campo', 'aria-label': 'Quantidade de goleiros fixos' },
+    h('option', { value: '0' }, 'Nenhum goleiro fixo'),
+    h('option', { value: '1' }, '1 goleiro fixo'),
+    h('option', { value: '2' }, '2 goleiros fixos'));
+  const elGoleirosEscolha = h('div', { class: 'formulario' });
+  function desenharGoleiros() {
+    const itens = [];
+    const criarSelect = (rotulo, selecionado, aoMudar) => {
+      const sel = h('select', { class: 'campo', 'aria-label': rotulo },
+        h('option', { value: '' }, 'Selecione o participante'),
+        ...participantes.map((p) => h('option', { value: p.id }, p.nome)));
+      sel.value = selecionado;
+      sel.addEventListener('change', () => aoMudar(sel.value));
+      return h('label', { class: 'rotulo-campo' }, rotulo, sel);
+    };
+    if (estado.quantidadeGoleirosFixos >= 1) itens.push(criarSelect('Goleiro fixo · lado esquerdo', estado.goleiroEsquerdoId, (v) => { estado.goleiroEsquerdoId = v; }));
+    if (estado.quantidadeGoleirosFixos === 2) itens.push(criarSelect('Goleiro fixo · lado direito', estado.goleiroDireitoId, (v) => { estado.goleiroDireitoId = v; }));
+    elGoleirosEscolha.replaceChildren(...itens);
+  }
+  selQuantidadeGoleiros.value = String(estado.quantidadeGoleirosFixos);
+  selQuantidadeGoleiros.addEventListener('change', () => {
+    estado.quantidadeGoleirosFixos = Number(selQuantidadeGoleiros.value);
+    if (estado.quantidadeGoleirosFixos < 1) estado.goleiroEsquerdoId = '';
+    if (estado.quantidadeGoleirosFixos < 2) estado.goleiroDireitoId = '';
+    desenharGoleiros();
+  });
+  cfgGoleiros.append(h('legend', { class: 'rotulo-campo' }, 'Goleiros fixos (opcional)'),
+    h('p', { class: 'ajuda' }, 'O goleiro permanece no mesmo lado físico da quadra. O sorteio dos times continua normal.'),
+    selQuantidadeGoleiros, elGoleirosEscolha);
+  desenharGoleiros();
 
   // ---- Configuração -------------------------------------------------
   const info = h('p', { class: 'resumo-config', 'aria-live': 'polite' });
@@ -105,7 +142,7 @@ export async function render(el, { id }, ctx) {
   }
 
   el.append(h('section', { class: 'cartao formulario', 'aria-label': 'Configuração do sorteio' },
-    stPorEquipe.el, stEquipes.el, btnAuto, info, erro, blocoEspera, btnSortear));
+    stPorEquipe.el, stEquipes.el, btnAuto, info, erro, blocoEspera, cfgGoleiros, btnSortear));
 
   if (participantes.length < 2) {
     el.append(h('div', { class: 'estado-vazio estado-vazio-compacto' },
@@ -161,7 +198,20 @@ export async function render(el, { id }, ctx) {
       if (!ok) return;
     }
     try {
+      if (estado.quantidadeGoleirosFixos >= 1 && !participantes.some((p) => p.id === estado.goleiroEsquerdoId)) {
+        toast('Escolha o goleiro fixo do lado esquerdo.', 'erro');
+        return;
+      }
+      if (estado.quantidadeGoleirosFixos === 2 && (!participantes.some((p) => p.id === estado.goleiroDireitoId) || estado.goleiroDireitoId === estado.goleiroEsquerdoId)) {
+        toast('Escolha um goleiro diferente para o lado direito.', 'erro');
+        return;
+      }
       await ctx.sorteios.confirmar(id, estado.resultado);
+      await ctx.store.definirMeta(chaveGoleirosFixos(id), {
+        quantidade: estado.quantidadeGoleirosFixos,
+        goleiroEsquerdoId: estado.quantidadeGoleirosFixos >= 1 ? estado.goleiroEsquerdoId : null,
+        goleiroDireitoId: estado.quantidadeGoleirosFixos === 2 ? estado.goleiroDireitoId : null,
+      });
       await ctx.store.definirMeta(chaveRascunho(id), null);
       toast('Times confirmados!');
       ctx.navegar(`/sessao/${id}/equipes`);
