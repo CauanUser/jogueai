@@ -37,7 +37,6 @@ export async function render(el, { id }, ctx) {
     `Sorteio nº ${sorteio.numero} · confirmado às ${formatarHora(sorteio.confirmado_em)} · diferença entre as somas: ${amplitude}`,
     pendentes.has(sorteio.id) ? h('span', { class: 'pendente' }, ' • pendente') : null));
 
-  const participantes = await ctx.participantes.listarPorSessao(id);
   const cfgFixos = await ctx.store.obterMeta(chaveGoleirosFixos(id));
   const idsFixos = new Set([
     ...(cfgFixos?.quantidade >= 1 && cfgFixos.goleiroEsquerdoId ? [cfgFixos.goleiroEsquerdoId] : []),
