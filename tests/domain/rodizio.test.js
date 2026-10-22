@@ -84,4 +84,21 @@ describe('ordem física da próxima partida', () => {
       ladoVencedor: 'empate', equipeVencedoraId: 'a', equipePerdedoraId: 'b',
     })).toThrow(/determinar os lados/);
   });
+
+  it('coloca a equipe que aguardava no lado da equipe perdedora sem mover o vencedor', () => {
+    expect(equipesProximaPartidaPorLado({
+      ladoVencedor: 'A', equipeVencedoraId: 'time-a', equipePerdedoraId: 'time-b',
+      equipeEntranteId: 'time-c',
+    })).toEqual({ equipeAId: 'time-a', equipeBId: 'time-c' });
+    expect(equipesProximaPartidaPorLado({
+      ladoVencedor: 'B', equipeVencedoraId: 'time-b', equipePerdedoraId: 'time-a',
+      equipeEntranteId: 'time-c',
+    })).toEqual({ equipeAId: 'time-c', equipeBId: 'time-b' });
+  });
+
+  it('não permite que a equipe entrante seja o vencedor ou o time perdedor atual', () => {
+    expect(() => equipesProximaPartidaPorLado({
+      ladoVencedor: 'A', equipeVencedoraId: 'a', equipePerdedoraId: 'b', equipeEntranteId: 'a',
+    })).toThrow(/determinar os lados/);
+  });
 });
