@@ -201,7 +201,9 @@ export async function render(el, { id }, ctx) {
     const p = d.partida;
     const motivo = p.configuracao_extra?.motivo_fim;
     const v = vencedor(p, placar);
-    const textoVencedor = v === 'empate' ? 'Empate.' : `Vitória do ${equipeDe(v).nome}${modalidade !== 'volei' && p.penaltis_a !== null && placar.a === placar.b ? ' nos pênaltis' : ''}.`;
+    const textoVencedor = motivo === 'manual'
+      ? (placar.a === placar.b ? 'Partida encerrada manualmente com empate no placar.' : `Partida encerrada manualmente; ${equipeDe(v).nome} estava à frente, sem vitória automática declarada.`)
+      : v === 'empate' ? 'Empate.' : `Vitória do ${equipeDe(v).nome}${modalidade !== 'volei' && p.penaltis_a !== null && placar.a === placar.b ? ' nos pênaltis' : ''}.`;
     const partes = [
       h('h2', {}, p.status === STATUS_PARTIDA.CONFIRMADA ? 'Resultado confirmado' : 'Fim de jogo'),
       h('p', { class: 'resultado-linha' }, `${d.equipeA.nome} ${placar.a} × ${placar.b} ${d.equipeB.nome}${motivo ? ` — ${MOTIVO_FIM[motivo] ?? motivo}` : ''}.`),
