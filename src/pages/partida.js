@@ -23,6 +23,7 @@ const TEXTO_STATUS = {
 const MOTIVO_FIM = { tempo: 'tempo encerrado', gols: 'alvo de pontuação atingido', manual: 'encerrada pelo organizador', sets: 'vitória por sets' };
 
 function resumoRegras(p) {
+  if (p.configuracao_extra?.modalidade === 'volei') return 'Vôlei · melhor de 5 sets · 25 pontos (set decisivo a 15) · vantagem de 2';
   const partes = [];
   if (p.condicao_encerramento !== CONDICOES.GOLS) partes.push(formatarTempo(p.duracao_segundos * 1000));
   const unidade = p.configuracao_extra?.modalidade === 'futebol' ? 'gols' : 'pontos';
@@ -44,7 +45,7 @@ export async function render(el, { id }, ctx) {
   }
   const sessaoId = d.partida.sessao_id;
   const configSessao = await ctx.store.obterMeta('sessao_config_' + sessaoId) ?? { modalidade: 'futebol' };
-  const modalidade = normalizarModalidade(configSessao.modalidade);
+  const modalidade = normalizarModalidade(d.partida.configuracao_extra?.modalidade ?? configSessao.modalidade);
   const regraEsporte = regraDaModalidade(modalidade);
   const telaAcesa = criarTelaAcesa();
   let gols = await ctx.partidas.gols(id);
@@ -330,6 +331,8 @@ export async function render(el, { id }, ctx) {
     const s = situacaoTempo(p, agora);
     elPlacar.textContent = `${placar.a} × ${placar.b}`;
     elPenaltisPlacar.textContent = p.penaltis_a !== null && p.penaltis_a !== undefined ? `pênaltis ${p.penaltis_a} × ${p.penaltis_b}` : '';
+    elTempo.hidden = modalidade === 'volei';
+    elRotuloTempo.hidden = modalidade === 'volei';
     elSets.hidden = modalidade !== 'volei';
     elSets.textContent = modalidade === 'volei' ? `Sets: ${Number(p.configuracao_extra?.sets_a ?? 0)} × ${Number(p.configuracao_extra?.sets_b ?? 0)} · Set ${Number(p.configuracao_extra?.set_atual ?? 1)}` : '';
     if (s.porTempo) {
