@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { normalizarModalidade, regraDaModalidade, validarValor, vencedorPorMeta } from '../../src/domain/modalidades.js';
+import { normalizarModalidade, regraDaModalidade, validarValor, vencedorPorMeta, avaliarVolei } from '../../src/domain/modalidades.js';
 import { avaliarEventoAutomatico, CONDICOES, STATUS_PARTIDA } from '../../src/domain/partida.js';
 
 describe('regras específicas por modalidade', () => {
@@ -34,6 +34,47 @@ describe('regras específicas por modalidade', () => {
       relogio_retomado_em: new Date(0).toISOString(),
     };
     expect(avaliarEventoAutomatico(partida, { agora: 500000, placarA: 20, placarB: 19 })).toBeNull();
-    expect(avaliarEventoAutomatico(partida, { agora: 500000, placarA: 21, placarB: 19 })?.motivo).toBe('gols');
+    expect(avaliarEventoAutomatico(partida, { agora: 500000, placarA: 21, placarB: 19 })).toBeNull();
   });
+
+  const partidaVolei = (meta = 11) => ({ equipe_a_id: 'A', equipe_b_id: 'B', limite_gols: meta });
+  const pontos = (sequencia) => sequencia.map((lado, i) => ({
+    id: String(i), equipe_id: lado, valor: 1, tempo_partida_segundos: i + 1,
+    ocorrido_em: new Date((i + 1) * 1000).toISOString(), created_at: new Date((i + 1) * 1000).toISOString(),
+  }));
+
+  it('ativa o ZEROU em 10 x 10 para meta 11 e mantém o placar normal', () => {
+    const eventos = pontos([...Array(10).fill('A'), ...Array(10).fill('B')]);
+    expect(avaliarVolei(eventos, partidaVolei())).toMatchObject({ a: 10, b: 10, zerou: true, zerouA: 0, zerouB: 0, vencedor: null });
+  });
+
+  it('reinicia o placar auxiliar quando empata e vence ao abrir 2 a 0', () => {
+    const eventos = pontos([
+      ...Array(10).fill('A'), ...Array(10).fill('B'), // 10 x 10: entra no ZEROU
+      'A', 'B', // empate no ZEROU: volta a 0 x 0
+      'A', 'A', // abre 2 x 0 e vence
+    ]);
+    expect(avaliarVolei(eventos, partidaVolei())).toMatchObject({
+      a: 12, b: 11, zerou: true, zerouA: 2, zerouB: 0, vencedor: 'A', vencedorPorZerou: true,
+    });
+  });
+
+  it('permite que o Time B vença com 0 x 2 no ZEROU', () => {
+    const eventos = pontos([
+      ...Array(10).fill('A'), ...Array(10).fill('B'),
+      'B', 'B',
+    ]);
+    expect(avaliarVolei(eventos, partidaVolei())).toMatchObject({ vencedor: 'B', vencedorPorZerou: true, zerouA: 0, zerouB: 2 });
+  });
+
+  it('não ativa o ZEROU antes do empate faltando um ponto', () => {
+    const eventos = pontos([...Array(10).fill('A'), ...Array(9).fill('B')]);
+    expect(avaliarVolei(eventos, partidaVolei())).toMatchObject({ a: 10, b: 9, zerou: false, vencedor: null });
+  });
+
+  it('mantém a vitória normal quando alguém alcança a meta antes do ZEROU', () => {
+    const eventos = pontos([...Array(11).fill('A'), ...Array(9).fill('B')]);
+    expect(avaliarVolei(eventos, partidaVolei())).toMatchObject({ vencedor: 'A', vencedorPorZerou: false });
+  });
+
 });
