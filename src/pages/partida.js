@@ -46,6 +46,7 @@ export async function render(el, { id }, ctx) {
   let placar = await ctx.partidas.placar(id);
   let processando = false;
   const nomes = new Map([...d.jogadoresA, ...d.jogadoresB].map((j) => [j.id, j.nome]));
+  const goleirosPorEquipe = await ctx.store.obterMeta(`goleiros_por_equipe:${d.partida.sessao_id}`) ?? {};
 
   // Elementos fixos (atualizados a cada "tick", sem recriar a tela)
   const elTempo = h('div', { class: 'relogio', role: 'timer', 'aria-live': 'off' });
@@ -70,7 +71,7 @@ export async function render(el, { id }, ctx) {
 
   const escalacao = (equipe, jogadores) => h('div', { class: 'escalacao', style: `--cor-equipe: ${equipe.cor}` },
     h('h3', {}, equipe.nome),
-    h('ul', {}, jogadores.map((j) => h('li', {}, j.nome))));
+    h('ul', {}, jogadores.map((j) => h('li', {}, j.id === goleirosPorEquipe[equipe.id] ? `${j.nome} (goleiro)` : j.nome))));
   const escalacoes = h('details', { class: 'cartao escalacoes' },
     h('summary', {}, 'Escalações'),
     h('div', { class: 'escalacoes-grade' }, escalacao(d.equipeA, d.jogadoresA), escalacao(d.equipeB, d.jogadoresB)));
