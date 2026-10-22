@@ -5,7 +5,9 @@ import { STATUS_PARTIDA } from './partida.js';
 export const TIPO_GOL = Object.freeze({ NORMAL: 'normal', CONTRA: 'contra' });
 
 /** Status em que gols podem ser lançados/corrigidos (espelha o banco). */
-const PODE_LANCAR = new Set([STATUS_PARTIDA.EM_ANDAMENTO, STATUS_PARTIDA.PAUSADA]);
+// A partida finalizada continua editável até a confirmação do resultado;
+// partidas confirmadas ou canceladas exigem reabertura antes de corrigir.
+const PODE_LANCAR = new Set([STATUS_PARTIDA.EM_ANDAMENTO, STATUS_PARTIDA.PAUSADA, STATUS_PARTIDA.FINALIZADA]);
 export const podeLancarGols = (p) => PODE_LANCAR.has(p?.status);
 
 export const ladoDaEquipe = (p, equipeId) =>
