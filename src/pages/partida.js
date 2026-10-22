@@ -283,7 +283,7 @@ export async function render(el, { id }, ctx) {
       }
       if (p.status !== STATUS_PARTIDA.CONFIGURADA) {
         itens.push(botao('Encerrar partida', 'btn-secundario', async (b) => {
-          const ok = await confirmar({ titulo: 'Encerrar a partida agora?', mensagem: `O cronômetro para e o placar atual (${placar.a} × ${placar.b}) fica como resultado.`, textoConfirmar: 'Encerrar' });
+          const ok = await confirmar({ titulo: 'Encerrar a partida agora?', mensagem: modalidade === 'volei' ? `A partida será encerrada com o placar atual (${placar.a} × ${placar.b}), sem declarar vitória automática.` : `O cronômetro para e o placar atual (${placar.a} × ${placar.b}) fica como resultado.`, textoConfirmar: 'Encerrar' });
           if (ok) executar(b, () => ctx.partidas.finalizar(id));
         }));
       }
