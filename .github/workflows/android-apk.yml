@@ -4,7 +4,7 @@ name: Testes e APK
 
 on:
   push:
-    branches: [main]
+    branches: [main, feature/sistema-rodizio]
   pull_request:
   workflow_dispatch:
 
@@ -68,7 +68,7 @@ jobs:
           retention-days: 30
       # Publica o APK na página "Releases" (fácil de baixar pelo celular).
       - name: Publicar em Releases
-        if: github.event_name != 'pull_request'
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: build-${{ github.run_number }}
