@@ -6,7 +6,7 @@ import {
   STATUS_PARTIDA, LIMITES, validarConfiguracao, partidaAtiva, relogioDaPartida, avaliarEventoAutomatico,
 } from '../domain/partida.js';
 import { ErroDeNegocio } from './sessoesRepo.js';
-import { setVencido, validarValor } from '../domain/modalidades.js';
+import { validarValor } from '../domain/modalidades.js';
 import {
   TIPO_GOL, placar as calcularPlacar, validarGol, equipeDoLado, ladoDaEquipe, ordenarGols,
   precisaPenaltis, validarPenaltis, pendenciaParaConfirmar,
@@ -158,7 +158,7 @@ export function criarPartidasRepo({ store, aoGravar = () => {} }) {
         equipe_b_id: equipeBId,
         status: STATUS_PARTIDA.CONFIGURADA,
         ...v.config,
-        configuracao_extra: { modalidade: config.modalidade ?? 'futebol', sets_a: 0, sets_b: 0, set_atual: 1 },
+        configuracao_extra: { modalidade: config.modalidade ?? 'futebol' },
         relogio_acumulado_ms: 0,
         relogio_retomado_em: null,
         penaltis_a: null,
@@ -263,8 +263,7 @@ export function criarPartidasRepo({ store, aoGravar = () => {} }) {
       if (!p) return { a: 0, b: 0 };
       const todos = await golsDaPartida(p);
       const modalidade = p.configuracao_extra?.modalidade ?? 'futebol';
-      const eventos = modalidade === 'volei' ? todos.filter((g) => Number(g.set_numero ?? 1) === Number(p.configuracao_extra?.set_atual ?? 1)) : todos;
-      return calcularPlacar(p, eventos);
+      return calcularPlacar(p, todos);
     },
 
     /**
@@ -283,7 +282,7 @@ export function criarPartidasRepo({ store, aoGravar = () => {} }) {
         const erro = validarGol(p, await escalacoesDaPartida(p), { lado, participanteId, tipo });
         if (erro) throw new ErroDeNegocio(erro);
         const momento = iso(agora);
-        const setNumero = modalidade === 'volei' ? Number(p.configuracao_extra?.set_atual ?? 1) : 1;
+        const setNumero = 1;
         const gol = {
           id: novoId(),
           sessao_id: p.sessao_id,
@@ -306,27 +305,13 @@ export function criarPartidasRepo({ store, aoGravar = () => {} }) {
         let partida = p;
         let encerrou = false;
         const todosEventos = await golsDaPartida(p);
-        const eventosSet = modalidade === 'volei' ? todosEventos.filter((g) => Number(g.set_numero ?? 1) === setNumero) : todosEventos;
-        const pl = calcularPlacar(p, eventosSet);
-        if (modalidade === 'volei') {
-          const setGanhador = setVencido(pl.a, pl.b, setNumero === 5);
-          if (setGanhador) {
-            const extra = p.configuracao_extra ?? {};
-            const setsA = Number(extra.sets_a ?? 0) + (setGanhador === 'A' ? 1 : 0);
-            const setsB = Number(extra.sets_b ?? 0) + (setGanhador === 'B' ? 1 : 0);
-            const venceu = setsA >= 3 || setsB >= 3;
-            const novo = { ...p, configuracao_extra: { ...extra, sets_a: setsA, sets_b: setsB, set_atual: venceu ? setNumero : setNumero + 1 } };
-            if (venceu) {
-              partida = await gravar({ ...novo, status: STATUS_PARTIDA.FINALIZADA, ended_at: momento, relogio_retomado_em: null, configuracao_extra: { ...novo.configuracao_extra, motivo_fim: 'sets' } });
-              encerrou = true;
-            } else partida = await gravar(novo);
-          } else partida = p;
-        } else {
-          const evento = avaliarEventoAutomatico(p, { agora, placarA: pl.a, placarB: pl.b });
-          if (evento?.tipo === 'encerrar') {
-            partida = await encerrarPorEvento(p, evento, agora);
-            encerrou = true;
-          } else partida = await ajustarPenaltis(p, pl);
+        const pl = calcularPlacar(p, todosEventos);
+        const evento = avaliarEventoAutomatico(p, { agora, placarA: pl.a, placarB: pl.b });
+        if (evento?.tipo === 'encerrar') {
+          partida = await encerrarPorEvento(p, evento, agora);
+          encerrou = true;
+        } else if (modalidade !== 'volei') {
+          partida = await ajustarPenaltis(p, pl);
         }
         return { gol, partida, encerrou, placar: pl };
       });
