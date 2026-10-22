@@ -47,8 +47,8 @@ export async function render(el, { id }, ctx) {
   const sessaoConfig = await ctx.store.obterMeta('sessao_config_' + id) ?? { modalidade: 'futebol' };
   const modalidade = normalizarModalidade(sessaoConfig.modalidade);
   const cfg = await lerPadrao(ctx);
-  if (modalidade === 'basquete') { cfg.condicao_encerramento = CONDICOES.TEMPO; cfg.limite_gols = null; cfg.desempate = 'nenhum'; }
-  if (modalidade === 'volei') { cfg.condicao_encerramento = CONDICOES.GOLS; cfg.limite_gols = cfg.limite_gols ?? 25; cfg.acrescimos_segundos = 0; cfg.intervalo_segundos = 0; cfg.desempate = 'nenhum'; }
+  if (modalidade === 'basquete') { cfg.condicao_encerramento = CONDICOES.GOLS; cfg.limite_gols = 21; cfg.desempate = 'nenhum'; }
+  if (modalidade === 'volei') { cfg.condicao_encerramento = CONDICOES.GOLS; cfg.limite_gols = 25; cfg.acrescimos_segundos = 0; cfg.intervalo_segundos = 0; cfg.desempate = 'nenhum'; }
   let selecionadas = sugerirConfronto(atual.equipes, partidasAnteriores);
 
   // ---- Equipes ------------------------------------------------------
