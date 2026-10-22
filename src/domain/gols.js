@@ -64,6 +64,7 @@ export function validarPenaltis(a, b) {
 /** O que falta para confirmar o resultado (null = pode confirmar). */
 export function pendenciaParaConfirmar(p, pl) {
   if (p.status !== STATUS_PARTIDA.FINALIZADA) return 'Só é possível confirmar uma partida encerrada.';
+  if ((p?.configuracao_extra?.modalidade ?? 'futebol') === 'volei') return null;
   if (precisaPenaltis(p, pl)) {
     if (p.penaltis_a === null || p.penaltis_a === undefined) return 'Empate: registre a disputa de pênaltis antes de confirmar.';
     return validarPenaltis(p.penaltis_a, p.penaltis_b);
