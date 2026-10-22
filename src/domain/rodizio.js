@@ -29,3 +29,37 @@ export function aplicarSubstituicao({ equipes, aguardando, equipePerdedoraId, pa
     ],
   };
 }
+
+/**
+ * Valida a configuração dos goleiros fixos sem influenciar o sorteio dos times.
+ * Os lados são físicos (esquerda/direita), não os nomes mutáveis das equipes.
+ */
+export function validarConfiguracaoGoleiros({ quantidade = 0, goleiroEsquerdoId = null, goleiroDireitoId = null, participantes = [] }) {
+  if (![0, 1, 2].includes(quantidade)) return 'Escolha 0, 1 ou 2 goleiros fixos.';
+  const ids = new Set(participantes.map((p) => p.id));
+  if (quantidade >= 1 && (!goleiroEsquerdoId || !ids.has(goleiroEsquerdoId))) return 'Escolha o goleiro fixo do lado esquerdo.';
+  if (quantidade === 2 && (!goleiroDireitoId || !ids.has(goleiroDireitoId))) return 'Escolha o goleiro fixo do lado direito.';
+  if (quantidade < 2 && goleiroDireitoId) return 'O goleiro do lado direito só pode ser definido quando houver 2 goleiros fixos.';
+  if (quantidade === 2 && goleiroEsquerdoId === goleiroDireitoId) return 'Cada lado precisa de um goleiro diferente.';
+  return null;
+}
+
+/**
+ * Guarda qual equipe ocupa cada lado físico. O goleiro fica ligado ao lado;
+ * quando uma equipe sai, a equipe que entra nesse lado passa a ser defendida
+ * pelo goleiro fixo daquele lado.
+ */
+export function criarEstadoLados({ equipeEsquerdaId, equipeDireitaId, quantidadeGoleirosFixos = 0, goleiroEsquerdoId = null, goleiroDireitoId = null }) {
+  return {
+    esquerda: { equipeId: equipeEsquerdaId, goleiroId: quantidadeGoleirosFixos >= 1 ? goleiroEsquerdoId : null },
+    direita: { equipeId: equipeDireitaId, goleiroId: quantidadeGoleirosFixos === 2 ? goleiroDireitoId : null },
+  };
+}
+
+/** Atualiza a ocupação física dos lados após o rodízio, sem trocar os goleiros de lado. */
+export function atualizarLadosAposRodizio({ estado, equipeEsquerdaId, equipeDireitaId }) {
+  return {
+    esquerda: { ...estado.esquerda, equipeId: equipeEsquerdaId },
+    direita: { ...estado.direita, equipeId: equipeDireitaId },
+  };
+}
