@@ -6,7 +6,7 @@ import {
   STATUS_PARTIDA, LIMITES, validarConfiguracao, partidaAtiva, relogioDaPartida, avaliarEventoAutomatico,
 } from '../domain/partida.js';
 import { ErroDeNegocio } from './sessoesRepo.js';
-import { validarValor } from '../domain/modalidades.js';
+import { validarValor, avaliarVolei } from '../domain/modalidades.js';
 import {
   TIPO_GOL, placar as calcularPlacar, validarGol, equipeDoLado, ladoDaEquipe, ordenarGols,
   precisaPenaltis, validarPenaltis, pendenciaParaConfirmar,
@@ -306,12 +306,25 @@ export function criarPartidasRepo({ store, aoGravar = () => {} }) {
         let encerrou = false;
         const todosEventos = await golsDaPartida(p);
         const pl = calcularPlacar(p, todosEventos);
-        const evento = avaliarEventoAutomatico(p, { agora, placarA: pl.a, placarB: pl.b });
-        if (evento?.tipo === 'encerrar') {
-          partida = await encerrarPorEvento(p, evento, agora);
-          encerrou = true;
-        } else if (modalidade !== 'volei') {
-          partida = await ajustarPenaltis(p, pl);
+        if (modalidade === 'volei') {
+          const estado = avaliarVolei(todosEventos, p);
+          if (estado.vencedor) {
+            partida = await encerrarPorEvento(p, {
+              tipo: 'encerrar',
+              motivo: estado.vencedorPorZerou ? 'zerou' : 'gols',
+              instante: agora,
+              decorridoMs: decorridoMs(relogioDaPartida(p), agora),
+            }, agora);
+            encerrou = true;
+          }
+        } else {
+          const evento = avaliarEventoAutomatico(p, { agora, placarA: pl.a, placarB: pl.b });
+          if (evento?.tipo === 'encerrar') {
+            partida = await encerrarPorEvento(p, evento, agora);
+            encerrou = true;
+          } else {
+            partida = await ajustarPenaltis(p, pl);
+          }
         }
         return { gol, partida, encerrou, placar: pl };
       });
