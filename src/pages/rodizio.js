@@ -25,6 +25,10 @@ export async function render(el, { id, partidaId }, ctx) {
   const titulo = h('h1', {}, 'Rodízio de jogadores');
   const nomeEquipeA = estado.atual.equipes.find((e) => e.id === estado.partida.equipe_a_id)?.nome ?? 'Time A';
   const nomeEquipeB = estado.atual.equipes.find((e) => e.id === estado.partida.equipe_b_id)?.nome ?? 'Time B';
+  // Preserve the A/B physical-side order when preparing the next match.
+  // The winning team may be A or B; always putting the winner first would swap sides.
+  const proximaEquipeAId = estado.ladoVencedor === 'A' ? estado.equipeVencedora.id : estado.equipePerdedora.id;
+  const proximaEquipeBId = estado.ladoVencedor === 'B' ? estado.equipeVencedora.id : estado.equipePerdedora.id;
   const resultado = h('p', { class: 'resultado-linha' },
     `Partida nº ${estado.partida.numero}: ${nomeEquipeA} ${estado.placar.a} × ${estado.placar.b} ${nomeEquipeB}. ${estado.equipeVencedora.nome} venceu.`,
     estado.partida.penaltis_a !== null && estado.partida.penaltis_a !== undefined
@@ -41,9 +45,9 @@ export async function render(el, { id, partidaId }, ctx) {
     }
     elGoleiros.hidden = false;
     const itens = [h('h2', {}, 'Goleiros fixos por lado')];
-    if (cfg.quantidade >= 1) itens.push(h('p', {}, `Lado esquerdo · ${nomeParticipante.get(cfg.goleiroEsquerdoId) ?? 'Goleiro não encontrado'} · defendendo o lado da equipe A nesta partida.`));
-    if (cfg.quantidade === 2) itens.push(h('p', {}, `Lado direito · ${nomeParticipante.get(cfg.goleiroDireitoId) ?? 'Goleiro não encontrado'} · defendendo o lado da equipe B nesta partida.`));
-    itens.push(h('p', { class: 'ajuda' }, 'Os goleiros fixos pertencem ao lado físico da quadra, não ao nome do time. Confira a posição dos lados ao preparar a próxima partida.'));
+    if (cfg.quantidade >= 1) itens.push(h('p', {}, `Lado esquerdo (A) · ${nomeParticipante.get(cfg.goleiroEsquerdoId) ?? 'Goleiro não encontrado'} · permanece no lado físico esquerdo.`));
+    if (cfg.quantidade === 2) itens.push(h('p', {}, `Lado direito (B) · ${nomeParticipante.get(cfg.goleiroDireitoId) ?? 'Goleiro não encontrado'} · permanece no lado físico direito.`));
+    itens.push(h('p', { class: 'ajuda' }, 'A ordem A/B é mantida ao preparar a próxima partida: o goleiro continua no mesmo lado físico, mesmo quando o vencedor está no lado B.'));
     elGoleiros.replaceChildren(...itens);
   }
   const elTimes = h('div');
@@ -148,7 +152,7 @@ export async function render(el, { id, partidaId }, ctx) {
     }));
     elAcoes.replaceChildren(
       btnEncerrar,
-      h('a', { class: 'btn btn-primario btn-grande', href: `#/sessao/${id}/partida/nova/${estado.equipeVencedora.id}/${estado.equipePerdedora.id}` }, 'Preparar próxima partida'),
+      h('a', { class: 'btn btn-primario btn-grande', href: `#/sessao/${id}/partida/nova/${proximaEquipeAId}/${proximaEquipeBId}` }, 'Preparar próxima partida'),
       h('a', { class: 'btn btn-secundario', href: `#/sessao/${id}/equipes` }, 'Voltar aos times'));
   }
 
