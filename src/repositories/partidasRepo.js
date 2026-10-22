@@ -283,7 +283,6 @@ export function criarPartidasRepo({ store, aoGravar = () => {} }) {
         const erro = validarGol(p, await escalacoesDaPartida(p), { lado, participanteId, tipo });
         if (erro) throw new ErroDeNegocio(erro);
         const momento = iso(agora);
-        const modalidade = p.configuracao_extra?.modalidade ?? 'futebol';
         const setNumero = modalidade === 'volei' ? Number(p.configuracao_extra?.set_atual ?? 1) : 1;
         const gol = {
           id: novoId(),
