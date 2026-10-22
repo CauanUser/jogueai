@@ -140,6 +140,23 @@ export async function render(el, { id }, ctx) {
     });
   }
 
+  async function desfazerPonto(g) {
+    const ladoGol = ladoDaEquipe(d.partida, g.equipe_id);
+    const equipe = equipeDe(ladoGol);
+    const ok = await confirmar({
+      titulo: modalidade === 'volei' ? 'Desfazer este ponto?' : 'Desfazer esta pontuação?',
+      mensagem: `Será removido 1 lançamento de ${equipe.nome}. O placar e, se necessário, o ZEROU serão recalculados pelo histórico.`,
+      textoConfirmar: 'Desfazer ponto', perigo: true,
+    });
+    if (!ok) return;
+    try {
+      await ctx.partidas.removerGol(id, g.id);
+      await recarregar();
+      toast('Ponto removido e placar recalculado.', 'info');
+      redesenhar();
+    } catch (e) { toast(e.message, 'erro'); }
+  }
+
   async function corrigirGol(g) {
     const ladoGol = ladoDaEquipe(d.partida, g.equipe_id);
     const r = await perguntarAutor({
@@ -174,9 +191,13 @@ export async function render(el, { id }, ctx) {
           h('span', { class: 'item-sub' }, modalidade === 'futebol' ? ` para ${equipe.nome}` : ` +${Number(g.valor ?? 1)} ${modalidade === 'basquete' ? 'ponto(s)' : 'ponto(s)'} para ${equipe.nome}`)),
         editavel && modalidade === 'futebol' ? icone('editar') : null,
       ];
-      return h('li', { style: `--cor-equipe: ${equipe.cor}` }, editavel && modalidade === 'futebol'
-        ? h('button', { type: 'button', class: 'item-gol', 'aria-label': `Corrigir gol de ${autor}${g.tipo === 'contra' ? ' (contra)' : ''} para ${equipe.nome}, ${minutoDoGol(g.tempo_partida_segundos)}`, onClick: () => corrigirGol(g) }, conteudo)
-        : h('div', { class: 'item-gol' }, conteudo));
+      return h('li', { style: `--cor-equipe: ${equipe.cor}` },
+        editavel && modalidade === 'futebol'
+          ? h('button', { type: 'button', class: 'item-gol', 'aria-label': `Corrigir gol de ${autor}${g.tipo === 'contra' ? ' (contra)' : ''} para ${equipe.nome}, ${minutoDoGol(g.tempo_partida_segundos)}`, onClick: () => corrigirGol(g) }, conteudo)
+          : h('div', { class: 'item-gol' }, conteudo),
+        editavel && modalidade !== 'futebol'
+          ? h('button', { type: 'button', class: 'btn btn-secundario', 'aria-label': `Desfazer ponto para ${equipe.nome}`, onClick: () => desfazerPonto(g) }, 'Desfazer')
+          : null);
     });
     elGols.hidden = gols.length === 0;
     elGols.replaceChildren(
