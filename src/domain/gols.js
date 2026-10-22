@@ -30,12 +30,14 @@ export function placar(p, gols) {
  * @param gol { lado (beneficiado), participanteId|null, tipo }
  */
 export function validarGol(p, escalacoes, { lado, participanteId = null, tipo = TIPO_GOL.NORMAL }) {
+  const futebol = (p?.configuracao_extra?.modalidade ?? 'futebol') === 'futebol';
+  const unidade = futebol ? 'gol' : 'ponto';
   if (!podeLancarGols(p)) {
-    if (p?.status === STATUS_PARTIDA.CONFIGURADA) return 'Inicie a partida antes de marcar gols.';
-    return 'O resultado desta partida já foi fechado. Reabra-a para corrigir os gols.';
+    if (p?.status === STATUS_PARTIDA.CONFIGURADA) return `Inicie a partida antes de registrar ${futebol ? 'gols' : 'pontos'}.`;
+    return `O resultado desta partida já foi fechado. Reabra-a para corrigir a pontuação.`;
   }
-  if (lado !== 'A' && lado !== 'B') return 'Escolha a equipe que fez o gol.';
-  if (!Object.values(TIPO_GOL).includes(tipo)) return 'Tipo de gol inválido.';
+  if (lado !== 'A' && lado !== 'B') return `Escolha a equipe que marcou ${futebol ? 'o gol' : 'o ponto'}.`;
+  if (!Object.values(TIPO_GOL).includes(tipo)) return futebol ? 'Tipo de gol inválido.' : 'Tipo de lançamento inválido.';
   if (participanteId) {
     const esc = escalacoes.find((e) => e.participante_id === participanteId);
     if (!esc) return 'Este jogador não está escalado nesta partida.';
