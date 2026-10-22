@@ -168,13 +168,32 @@ export function criarPartidasRepo({ store, aoGravar = () => {} }) {
         created_at: agora,
         updated_at: agora,
       };
+      // Goleiros fixos são escalados por lado físico, não pela equipe sorteada.
+      // Isso mantém o mesmo goleiro no mesmo lado quando as equipes mudam de lado.
+      const cfgGoleiros = await store.obterMeta(`goleiros_fixos:${sessaoId}`);
+      const idsGoleirosFixos = new Set([
+        ...(cfgGoleiros?.quantidade >= 1 && cfgGoleiros.goleiroEsquerdoId ? [cfgGoleiros.goleiroEsquerdoId] : []),
+        ...(cfgGoleiros?.quantidade === 2 && cfgGoleiros.goleiroDireitoId ? [cfgGoleiros.goleiroDireitoId] : []),
+      ]);
       const escalacoes = membros
-        .filter((m) => m.equipe_id === equipeAId || m.equipe_id === equipeBId)
+        .filter((m) => (m.equipe_id === equipeAId || m.equipe_id === equipeBId) && !idsGoleirosFixos.has(m.participante_id))
         .sort((a, b) => (a.created_at ?? '').localeCompare(b.created_at ?? ''))
         .map((m) => ({
           id: novoId(), sessao_id: sessaoId, partida_id: partida.id, participante_id: m.participante_id,
           lado: m.equipe_id === equipeAId ? 'A' : 'B', created_at: m.created_at ?? agora,
         }));
+      if (cfgGoleiros?.quantidade >= 1 && cfgGoleiros.goleiroEsquerdoId) {
+        escalacoes.push({
+          id: novoId(), sessao_id: sessaoId, partida_id: partida.id,
+          participante_id: cfgGoleiros.goleiroEsquerdoId, lado: 'A', created_at: agora,
+        });
+      }
+      if (cfgGoleiros?.quantidade === 2 && cfgGoleiros.goleiroDireitoId) {
+        escalacoes.push({
+          id: novoId(), sessao_id: sessaoId, partida_id: partida.id,
+          participante_id: cfgGoleiros.goleiroDireitoId, lado: 'B', created_at: agora,
+        });
+      }
 
       await store.transacao([STORES.PARTIDAS, STORES.PARTIDA_ESCALACOES, STORES.OUTBOX], (h) => {
         h[STORES.PARTIDAS].put(partida);
