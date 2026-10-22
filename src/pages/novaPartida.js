@@ -48,7 +48,7 @@ export async function render(el, { id }, ctx) {
   const modalidade = normalizarModalidade(sessaoConfig.modalidade);
   const cfg = await lerPadrao(ctx);
   if (modalidade === 'basquete') { cfg.condicao_encerramento = CONDICOES.TEMPO; cfg.limite_gols = null; cfg.desempate = 'nenhum'; }
-  if (modalidade === 'volei') { cfg.condicao_encerramento = CONDICOES.GOLS; cfg.limite_gols = 25; cfg.acrescimos_segundos = 0; cfg.intervalo_segundos = 0; cfg.desempate = 'nenhum'; }
+  if (modalidade === 'volei') { cfg.condicao_encerramento = CONDICOES.GOLS; cfg.limite_gols = cfg.limite_gols ?? 25; cfg.acrescimos_segundos = 0; cfg.intervalo_segundos = 0; cfg.desempate = 'nenhum'; }
   let selecionadas = sugerirConfronto(atual.equipes, partidasAnteriores);
 
   // ---- Equipes ------------------------------------------------------
@@ -96,7 +96,7 @@ export async function render(el, { id }, ctx) {
     aoMudar: (v) => { cfg.limite_gols = v; },
   });
   const blocoGols = h('div', {}, stGols.el);
-  if (modalidade === 'volei') blocoGols.hidden = true;
+  if (modalidade === 'volei') blocoGols.hidden = false;
 
   const radio = (nome, valor, texto, atualValor, aoEscolher) => {
     const inp = h('input', { type: 'radio', name: nome, value: valor, id: `${nome}-${valor}` });
@@ -104,7 +104,7 @@ export async function render(el, { id }, ctx) {
     inp.addEventListener('change', () => aoEscolher(valor));
     return h('label', { class: 'opcao-radio', for: `${nome}-${valor}` }, inp, h('span', {}, h('strong', {}, texto)));
   };
-  const atualizarGols = () => { blocoGols.hidden = modalidade === 'volei' || cfg.condicao_encerramento === CONDICOES.TEMPO; };
+  const atualizarGols = () => { blocoGols.hidden = modalidade !== 'volei' && cfg.condicao_encerramento === CONDICOES.TEMPO; };
   const escolherCondicao = (v) => {
     cfg.condicao_encerramento = v;
     if (v !== CONDICOES.TEMPO && !cfg.limite_gols) { cfg.limite_gols = modalidade === 'basquete' ? 21 : 2; stGols.definir(cfg.limite_gols); }
@@ -113,8 +113,9 @@ export async function render(el, { id }, ctx) {
   const condPrimeiro = radio('condicao', CONDICOES.PRIMEIRO, modalidade === 'futebol' ? 'Ao atingir o limite de gols ou acabar o tempo' : 'Ao atingir o alvo de pontos ou acabar o tempo', cfg.condicao_encerramento, escolherCondicao);
   const condTempo = radio('condicao', CONDICOES.TEMPO, modalidade === 'volei' ? 'Melhor de 5 sets (25 pontos; set decisivo a 15)' : 'Somente ao acabar o tempo', cfg.condicao_encerramento, escolherCondicao);
   const condAlvo = radio('condicao', CONDICOES.GOLS, modalidade === 'futebol' ? 'Somente ao atingir o limite de gols' : 'Somente ao atingir o alvo de pontos', cfg.condicao_encerramento, escolherCondicao);
-  if (modalidade === 'volei') { condPrimeiro.hidden = true; condAlvo.hidden = true; }
+  if (modalidade === 'volei') { condPrimeiro.hidden = true; condTempo.hidden = true; condAlvo.hidden = true; }
   const condicao = h('fieldset', { class: 'grupo-radio' }, h('legend', { class: 'rotulo-campo' }, 'Como a partida termina'), condPrimeiro, condTempo, condAlvo);
+  if (modalidade === 'volei') condicao.hidden = true;
   atualizarGols();
 
   const minutos = (s) => (s === 0 ? 'Não' : `${s / 60} min`);
@@ -155,7 +156,7 @@ export async function render(el, { id }, ctx) {
       h('h2', { id: 'tit-equipes' }, 'Quem joga'), grade, infoEquipes),
     h('section', { class: 'cartao formulario', 'aria-labelledby': 'tit-regras' },
       h('h2', { id: 'tit-regras' }, 'Regras desta partida'),
-      h('p', { class: 'ajuda' }, modalidade === 'futebol' ? 'Futebol: cada gol vale 1. Escolha alvo de gols, tempo ou o que acontecer primeiro.' : modalidade === 'basquete' ? 'Basquete: lance livre = 1, cesta comum = 2 e cesta de três = 3. Defina um alvo de pontos, o tempo ou ambos.' : 'Vôlei: pontos por rally, sets de 25 (set decisivo de 15), vantagem mínima de 2; vence quem ganhar 3 sets.'),
+      h('p', { class: 'ajuda' }, modalidade === 'futebol' ? 'Futebol: cada gol vale 1. Escolha alvo de gols, tempo ou o que acontecer primeiro.' : modalidade === 'basquete' ? 'Basquete: lance livre = 1, cesta comum = 2 e cesta de três = 3. Defina um alvo de pontos, o tempo ou ambos.' : 'Vôlei: escolha a meta de pontos. Não há cronômetro nem sets; vence quem alcançar a meta primeiro.'),
       modalidade !== 'volei' ? stDuracao.el : null, modalidade !== 'volei' ? rapidas : null, condicao, blocoGols, modalidade === 'futebol' ? stAcrescimos.el : null, modalidade === 'futebol' ? stIntervalo.el : null,
       modalidade === 'futebol' ? h('p', { class: 'ajuda' }, 'Com intervalo, o cronômetro pausa sozinho na metade do tempo.') : null,
       empate,
