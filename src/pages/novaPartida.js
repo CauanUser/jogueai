@@ -110,11 +110,11 @@ export async function render(el, { id }, ctx) {
     if (v !== CONDICOES.TEMPO && !cfg.limite_gols) { cfg.limite_gols = modalidade === 'basquete' ? 21 : 2; stGols.definir(cfg.limite_gols); }
     atualizarGols();
   };
-  const condicao = h('fieldset', { class: 'grupo-radio' },
-    h('legend', { class: 'rotulo-campo' }, 'A partida termina'),
-    radio('condicao', CONDICOES.PRIMEIRO, (modalidade === 'futebol' ? 'Ao atingir o limite de gols ou acabar o tempo' : 'Ao atingir o alvo de pontos ou acabar o tempo'), cfg.condicao_encerramento, escolherCondicao),
-    radio('condicao', CONDICOES.TEMPO, (modalidade === 'volei' ? 'Melhor de 5 sets (25 pontos; set decisivo a 15)' : 'Somente ao acabar o tempo'), cfg.condicao_encerramento, escolherCondicao),
-    radio('condicao', CONDICOES.GOLS, (modalidade === 'futebol' ? 'Somente ao atingir o limite de gols' : 'Somente ao atingir o alvo de pontos'), cfg.condicao_encerramento, escolherCondicao));
+  const condPrimeiro = radio('condicao', CONDICOES.PRIMEIRO, modalidade === 'futebol' ? 'Ao atingir o limite de gols ou acabar o tempo' : 'Ao atingir o alvo de pontos ou acabar o tempo', cfg.condicao_encerramento, escolherCondicao);
+  const condTempo = radio('condicao', CONDICOES.TEMPO, modalidade === 'volei' ? 'Melhor de 5 sets (25 pontos; set decisivo a 15)' : 'Somente ao acabar o tempo', cfg.condicao_encerramento, escolherCondicao);
+  const condAlvo = radio('condicao', CONDICOES.GOLS, modalidade === 'futebol' ? 'Somente ao atingir o limite de gols' : 'Somente ao atingir o alvo de pontos', cfg.condicao_encerramento, escolherCondicao);
+  if (modalidade === 'volei') { condPrimeiro.hidden = true; condAlvo.hidden = true; }
+  const condicao = h('fieldset', { class: 'grupo-radio' }, h('legend', { class: 'rotulo-campo' }, 'Como a partida termina'), condPrimeiro, condTempo, condAlvo);
   atualizarGols();
 
   const minutos = (s) => (s === 0 ? 'Não' : `${s / 60} min`);
