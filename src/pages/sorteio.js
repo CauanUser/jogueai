@@ -200,6 +200,55 @@ export async function render(el, { id }, ctx) {
       h('div', { class: 'acoes acoes-coluna' }, btnConfirmar, btnDeNovo));
   }
 
+  function garantirGoleirosEmEquipes(resultado) {
+    const fixos = [
+      ...(estado.quantidadeGoleirosFixos >= 1 ? [estado.goleiroEsquerdoId] : []),
+      ...(estado.quantidadeGoleirosFixos === 2 ? [estado.goleiroDireitoId] : []),
+    ].filter(Boolean);
+    if (!fixos.length) return resultado;
+
+    // Goleiros fixos precisam participar da partida: se ficaram na espera,
+    // troque-os por jogadores de uma equipe sem alterar o tamanho dos times.
+    for (const idFixo of fixos) {
+      if (resultado.equipes.some((e) => e.participantes.includes(idFixo))) continue;
+      const idxEspera = resultado.aguardando.indexOf(idFixo);
+      if (idxEspera < 0) continue;
+      const equipe = resultado.equipes.find((e) => e.participantes.length);
+      if (!equipe) continue;
+      const substituido = equipe.participantes[equipe.participantes.length - 1];
+      equipe.participantes[equipe.participantes.length - 1] = idFixo;
+      resultado.aguardando[idxEspera] = substituido;
+    }
+
+    // Com dois goleiros fixos, cada um deve ficar em uma equipe diferente.
+    if (fixos.length === 2) {
+      const [idEsquerdo, idDireito] = fixos;
+      const equipeEsquerda = resultado.equipes.find((e) => e.participantes.includes(idEsquerdo));
+      const equipeDireita = resultado.equipes.find((e) => e.participantes.includes(idDireito));
+      if (equipeEsquerda && equipeDireita && equipeEsquerda === equipeDireita) {
+        const outraEquipe = resultado.equipes.find((e) => e !== equipeEsquerda);
+        if (!outraEquipe) throw new Error('São necessárias duas equipes para separar os goleiros fixos.');
+        const substituto = outraEquipe.participantes.find((pid) => !fixos.includes(pid));
+        const indiceDireito = equipeEsquerda.participantes.indexOf(idDireito);
+        const indiceSubstituto = outraEquipe.participantes.indexOf(substituto);
+        if (!substituto || indiceDireito < 0 || indiceSubstituto < 0) {
+          throw new Error('Não foi possível colocar os goleiros fixos em equipes diferentes. Ajuste a quantidade de jogadores por equipe.');
+        }
+        equipeEsquerda.participantes[indiceDireito] = substituto;
+        outraEquipe.participantes[indiceSubstituto] = idDireito;
+      }
+    }
+
+    // Atualiza as somas e o indicador de equilíbrio após as trocas obrigatórias.
+    const notaPorId = new Map(participantes.map((p) => [p.id, Number(p.nota)]));
+    for (const equipe of resultado.equipes) {
+      equipe.soma = equipe.participantes.reduce((soma, pid) => soma + (notaPorId.get(pid) ?? 0), 0);
+    }
+    const somas = resultado.equipes.map((e) => e.soma);
+    resultado.amplitude = Math.max(...somas) - Math.min(...somas);
+    return resultado;
+  }
+
   function sortear() {
     const cfg = atualizarConfig();
     if (!cfg.ok) return;
@@ -207,7 +256,7 @@ export async function render(el, { id }, ctx) {
       const r = sortearEquipes(participantes, {
         jogadoresPorEquipe: estado.porEquipe, qtdEquipes: estado.qtdEquipes, modoEspera: estado.modoEspera,
       });
-      estado.resultado = r;
+      estado.resultado = garantirGoleirosEmEquipes(r);
       salvarRascunho();
       desenharResultado();
       areaResultado.scrollIntoView({ behavior: 'smooth', block: 'start' });
