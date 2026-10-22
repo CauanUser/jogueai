@@ -276,10 +276,10 @@ export async function render(el, { id }, ctx) {
       }));
     }
     if (partidaAtiva(p)) {
-      if (p.condicao_encerramento !== CONDICOES.GOLS) {
+      if (modalidade !== 'volei' && p.condicao_encerramento !== CONDICOES.GOLS) {
         itens.push(botao('+1 min de acréscimo', 'btn-secundario', (b) => executar(b, () => ctx.partidas.adicionarAcrescimo(id, 60), '1 minuto de acréscimo adicionado.')));
       }
-      if (p.status !== STATUS_PARTIDA.CONFIGURADA) {
+      if (p.status !== STATUS_PARTIDA.CONFIGURADA && modalidade !== 'volei') {
         itens.push(botao('Encerrar partida', 'btn-secundario', async (b) => {
           const ok = await confirmar({ titulo: 'Encerrar a partida agora?', mensagem: `O cronômetro para e o placar atual (${placar.a} × ${placar.b}) fica como resultado.`, textoConfirmar: 'Encerrar' });
           if (ok) executar(b, () => ctx.partidas.finalizar(id));
