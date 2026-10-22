@@ -59,6 +59,7 @@ export async function render(el, { id }, ctx) {
   const elControles = h('div', { class: 'controles-partida' });
   const elPlacar = h('div', { class: 'placar-numeros', 'aria-live': 'polite' });
   const elPenaltisPlacar = h('div', { class: 'placar-penaltis' });
+  const elSets = h('p', { class: 'texto-suave placar-sets', 'aria-live': 'polite' });
   const elGols = h('section', { class: 'cartao lista-gols-cartao', 'aria-labelledby': 'tit-gols' });
   const elFim = h('div');
 
@@ -70,7 +71,7 @@ export async function render(el, { id }, ctx) {
     h('span', { class: 'equipe-cor', 'aria-hidden': 'true' }), h('span', { class: 'placar-nome' }, equipe.nome));
   const placarCartao = h('section', { class: 'cartao placar', 'aria-label': 'Placar' },
     h('div', { class: 'placar-linha' }, lado(d.equipeA, 'lado-a'), elPlacar, lado(d.equipeB, 'lado-b')),
-    elPenaltisPlacar, elTempo, elRotuloTempo, elStatus);
+    elPenaltisPlacar, elSets, elTempo, elRotuloTempo, elStatus);
 
   const escalacao = (equipe, jogadores) => h('div', { class: 'escalacao', style: `--cor-equipe: ${equipe.cor}` },
     h('h3', {}, equipe.nome),
@@ -85,6 +86,7 @@ export async function render(el, { id }, ctx) {
   const recarregar = async () => {
     d = await ctx.partidas.detalhar(id);
     gols = await ctx.partidas.gols(id);
+    if (modalidade === 'volei') gols = gols.filter((g) => Number(g.set_numero ?? 1) === Number(d.partida.configuracao_extra?.set_atual ?? 1));
     placar = await ctx.partidas.placar(id);
   };
   const redesenhar = () => { desenharControles(); desenharGols(); atualizar(); };
@@ -325,6 +327,8 @@ export async function render(el, { id }, ctx) {
     const s = situacaoTempo(p, agora);
     elPlacar.textContent = `${placar.a} × ${placar.b}`;
     elPenaltisPlacar.textContent = p.penaltis_a !== null && p.penaltis_a !== undefined ? `pênaltis ${p.penaltis_a} × ${p.penaltis_b}` : '';
+    elSets.hidden = modalidade !== 'volei';
+    elSets.textContent = modalidade === 'volei' ? `Sets: ${Number(p.configuracao_extra?.sets_a ?? 0)} × ${Number(p.configuracao_extra?.sets_b ?? 0)} · Set ${Number(p.configuracao_extra?.set_atual ?? 1)}` : '';
     if (s.porTempo) {
       elTempo.textContent = formatarRestante(s.restanteMs);
       elRotuloTempo.textContent = p.acrescimos_segundos
