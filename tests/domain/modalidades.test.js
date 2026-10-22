@@ -38,19 +38,20 @@ describe('regras específicas por modalidade', () => {
   });
 
   const partidaVolei = (meta = 11) => ({ equipe_a_id: 'A', equipe_b_id: 'B', limite_gols: meta });
+  const placarSequencia = (a, b) => Array.from({ length: Math.max(a, b) }, (_, i) => [i < a ? 'A' : null, i < b ? 'B' : null]).flat().filter(Boolean);
   const pontos = (sequencia) => sequencia.map((lado, i) => ({
     id: String(i), equipe_id: lado, valor: 1, tempo_partida_segundos: i + 1,
     ocorrido_em: new Date((i + 1) * 1000).toISOString(), created_at: new Date((i + 1) * 1000).toISOString(),
   }));
 
   it('ativa o ZEROU em 10 x 10 para meta 11 e mantém o placar normal', () => {
-    const eventos = pontos([...Array(10).fill('A'), ...Array(10).fill('B')]);
+    const eventos = pontos(placarSequencia(10, 10));
     expect(avaliarVolei(eventos, partidaVolei())).toMatchObject({ a: 10, b: 10, zerou: true, zerouA: 0, zerouB: 0, vencedor: null });
   });
 
   it('reinicia o placar auxiliar quando empata e vence ao abrir 2 a 0', () => {
     const eventos = pontos([
-      ...Array(10).fill('A'), ...Array(10).fill('B'), // 10 x 10: entra no ZEROU
+      ...placarSequencia(10, 10), // 10 x 10: entra no ZEROU
       'A', 'B', // empate no ZEROU: volta a 0 x 0
       'A', 'A', // abre 2 x 0 e vence
     ]);
@@ -61,19 +62,19 @@ describe('regras específicas por modalidade', () => {
 
   it('permite que o Time B vença com 0 x 2 no ZEROU', () => {
     const eventos = pontos([
-      ...Array(10).fill('A'), ...Array(10).fill('B'),
+      ...placarSequencia(10, 10),
       'B', 'B',
     ]);
     expect(avaliarVolei(eventos, partidaVolei())).toMatchObject({ vencedor: 'B', vencedorPorZerou: true, zerouA: 0, zerouB: 2 });
   });
 
   it('não ativa o ZEROU antes do empate faltando um ponto', () => {
-    const eventos = pontos([...Array(10).fill('A'), ...Array(9).fill('B')]);
+    const eventos = pontos(placarSequencia(10, 9));
     expect(avaliarVolei(eventos, partidaVolei())).toMatchObject({ a: 10, b: 9, zerou: false, vencedor: null });
   });
 
   it('mantém a vitória normal quando alguém alcança a meta antes do ZEROU', () => {
-    const eventos = pontos([...Array(11).fill('A'), ...Array(9).fill('B')]);
+    const eventos = pontos(placarSequencia(11, 9));
     expect(avaliarVolei(eventos, partidaVolei())).toMatchObject({ vencedor: 'A', vencedorPorZerou: false });
   });
 
