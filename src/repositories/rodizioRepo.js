@@ -85,6 +85,13 @@ export function criarRodizioRepo({ store, sorteios, partidas, aoGravar = () => {
       return emSerie(partidaId, async () => {
       const st = await estado(sessaoId, partidaId);
       if (st.encerradoSemTroca) throw new ErroDeNegocio('O rodízio desta partida já foi concluído.');
+      const idsGoleirosFixos = new Set([
+        ...(st.configGoleiros?.quantidade >= 1 && st.configGoleiros.goleiroEsquerdoId ? [st.configGoleiros.goleiroEsquerdoId] : []),
+        ...(st.configGoleiros?.quantidade === 2 && st.configGoleiros.goleiroDireitoId ? [st.configGoleiros.goleiroDireitoId] : []),
+      ]);
+      if (idsGoleirosFixos.has(participanteSaiId)) {
+        throw new ErroDeNegocio('O goleiro fixo não pode sair por uma substituição comum; ele permanece no lado físico designado.');
+      }
       const erro = validarSubstituicao({
         equipePerdedora: st.equipePerdedora,
         aguardando: st.atual.aguardando,
