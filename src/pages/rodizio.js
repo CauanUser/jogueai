@@ -32,6 +32,9 @@ export async function render(el, { id, partidaId }, ctx) {
   const nomeEquipeB = estado.atual.equipes.find((e) => e.id === estado.partida.equipe_b_id)?.nome ?? 'Time B';
   // Preserve the A/B physical-side order when preparing the next match.
   // The winning team may be A or B; always putting the winner first would swap sides.
+  const equipesAguardando = estado.atual.equipes.filter((e) =>
+    e.id !== estado.equipeVencedora.id && e.id !== estado.equipePerdedora.id);
+  let equipeEntranteId = '';
   const { equipeAId: proximaEquipeAId, equipeBId: proximaEquipeBId } = equipesProximaPartidaPorLado({
     ladoVencedor: estado.ladoVencedor,
     equipeVencedoraId: estado.equipeVencedora.id,
@@ -158,9 +161,33 @@ export async function render(el, { id, partidaId }, ctx) {
         ctx.navegar(`/sessao/${id}/rodizio/${partidaId}`);
       } catch (e) { toast(e.message, 'erro'); }
     }));
+    const linkProxima = h('a', {
+      class: 'btn btn-primario btn-grande',
+      href: `#/sessao/${id}/partida/nova/${proximaEquipeAId}/${proximaEquipeBId}`,
+    }, 'Preparar próxima partida');
+    const controlesProxima = [];
+    if (equipesAguardando.length) {
+      const selEquipeEntrante = h('select', { class: 'campo', 'aria-label': 'Equipe que entra no lugar da perdedora' },
+        h('option', { value: '' }, 'Manter equipe perdedora'),
+        ...equipesAguardando.map((e) => h('option', { value: e.id }, `Entrar: ${e.nome}`)));
+      selEquipeEntrante.addEventListener('change', () => {
+        equipeEntranteId = selEquipeEntrante.value;
+        const proxima = equipesProximaPartidaPorLado({
+          ladoVencedor: estado.ladoVencedor,
+          equipeVencedoraId: estado.equipeVencedora.id,
+          equipePerdedoraId: estado.equipePerdedora.id,
+          equipeEntranteId: equipeEntranteId || null,
+        });
+        linkProxima.href = `#/sessao/${id}/partida/nova/${proxima.equipeAId}/${proxima.equipeBId}`;
+      });
+      controlesProxima.push(
+        h('label', { class: 'rotulo-campo' }, 'Rodízio de equipes (opcional)', selEquipeEntrante),
+        h('p', { class: 'ajuda' }, 'O vencedor continua no mesmo lado físico. A equipe que entrar ocupa o lado da perdedora, mantendo o goleiro fixo desse lado.'));
+    }
     elAcoes.replaceChildren(
       btnEncerrar,
-      h('a', { class: 'btn btn-primario btn-grande', href: `#/sessao/${id}/partida/nova/${proximaEquipeAId}/${proximaEquipeBId}` }, 'Preparar próxima partida'),
+      ...controlesProxima,
+      linkProxima,
       h('a', { class: 'btn btn-secundario', href: `#/sessao/${id}/equipes` }, 'Voltar aos times'));
   }
 
