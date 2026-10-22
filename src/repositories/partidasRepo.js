@@ -374,6 +374,7 @@ export function criarPartidasRepo({ store, aoGravar = () => {} }) {
     definirPenaltis(id, a, b) {
       return emSerie(id, async () => {
         const p = await exigir(id, [STATUS_PARTIDA.FINALIZADA], 'registrar pênaltis');
+        if (p.configuracao_extra?.modalidade === 'volei') throw new ErroDeNegocio('O vôlei utiliza a regra de ZEROU, não pênaltis.');
         if (a === null && b === null) return gravar({ ...p, penaltis_a: null, penaltis_b: null });
         const pl = calcularPlacar(p, await golsDaPartida(p));
         if (!precisaPenaltis(p, pl)) throw new ErroDeNegocio('Pênaltis só valem para partida empatada com desempate por pênaltis.');
