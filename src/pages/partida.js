@@ -115,6 +115,7 @@ export async function render(el, { id }, ctx) {
   async function marcarGol(ladoGol, b, valor = 1) {
     // No futebol registra autor/gol; nos demais esportes registra o valor do ponto.
     const momento = Date.now();
+    const setAntes = Number(d.partida.configuracao_extra?.set_atual ?? 1);
     let r = { participanteId: null, tipo: 'normal', valor };
     if (modalidade === 'futebol') {
       r = await perguntarAutor({ equipe: equipeDe(ladoGol), doTime: jogadoresDe(ladoGol), adversarios: jogadoresDe(outroLado(ladoGol)) });
@@ -131,6 +132,9 @@ export async function render(el, { id }, ctx) {
         if (res.encerrou) {
           apitar();
           toast(`${modalidade === 'futebol' ? 'Gol' : modalidade === 'basquete' ? 'Pontuação' : 'Ponto'}${autor ? ` de ${autor}` : ''}! Fim de partida.`, 'info', 5000);
+        } else if (modalidade === 'volei' && Number(d.partida.configuracao_extra?.set_atual ?? 1) !== setAntes) {
+          const extra = d.partida.configuracao_extra ?? {};
+          toast(`Set ${setAntes} vencido por ${equipeDe(ladoGol).nome}! Sets: ${Number(extra.sets_a ?? 0)} × ${Number(extra.sets_b ?? 0)}. Começou o set ${extra.set_atual}.`, 'info', 5000);
         } else {
           toast(`${modalidade === 'futebol' ? 'Gol' : modalidade === 'basquete' ? 'Cesta/ponto' : 'Ponto'} ${equipeDe(ladoGol).nome}${autor ? ` — ${autor}${r.tipo === 'contra' ? ' (contra)' : ''}` : ''}${modalidade === 'basquete' ? ` (+${valor})` : ''}. ${placar.a} × ${placar.b}`, 'info');
         }
