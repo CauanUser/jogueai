@@ -18,6 +18,9 @@ export async function render(el, { id, partidaId }, ctx) {
 
   let saiId = '';
   let entraId = '';
+  const configGoleiros = await ctx.store.obterMeta(`goleiros_fixos:${id}`);
+  const participantesSessao = await ctx.participantes.listarPorSessao(id);
+  const nomeParticipante = new Map(participantesSessao.map((p) => [p.id, p.nome]));
   const nomePorId = new Map([...estado.atual.equipes.flatMap((e) => e.jogadores), ...estado.atual.aguardando].map((p) => [p.id, p.nome]));
   const titulo = h('h1', {}, 'Rodízio de jogadores');
   const nomeEquipeA = estado.atual.equipes.find((e) => e.id === estado.partida.equipe_a_id)?.nome ?? 'Time A';
@@ -28,6 +31,21 @@ export async function render(el, { id, partidaId }, ctx) {
       ? h('span', { class: 'item-sub' }, ` Pênaltis: ${estado.partida.penaltis_a} × ${estado.partida.penaltis_b}.`)
       : null);
   const resumo = h('p', { class: 'resultado-vencedor' }, `${estado.equipeVencedora.nome} permanece em campo.`);
+  const elGoleiros = h('section', { class: 'cartao' });
+  function desenharGoleirosFixos() {
+    const cfg = configGoleiros;
+    if (!cfg || !cfg.quantidade) {
+      elGoleiros.hidden = true;
+      elGoleiros.replaceChildren();
+      return;
+    }
+    elGoleiros.hidden = false;
+    const itens = [h('h2', {}, 'Goleiros fixos por lado')];
+    if (cfg.quantidade >= 1) itens.push(h('p', {}, `Lado esquerdo · ${nomeParticipante.get(cfg.goleiroEsquerdoId) ?? 'Goleiro não encontrado'} · defendendo o lado da equipe A nesta partida.`));
+    if (cfg.quantidade === 2) itens.push(h('p', {}, `Lado direito · ${nomeParticipante.get(cfg.goleiroDireitoId) ?? 'Goleiro não encontrado'} · defendendo o lado da equipe B nesta partida.`));
+    itens.push(h('p', { class: 'ajuda' }, 'Os goleiros fixos pertencem ao lado físico da quadra, não ao nome do time. Confira a posição dos lados ao preparar a próxima partida.'));
+    elGoleiros.replaceChildren(...itens);
+  }
   const elTimes = h('div');
   const elFila = h('div');
   const elSelecao = h('section', { class: 'cartao formulario' });
@@ -140,9 +158,11 @@ export async function render(el, { id, partidaId }, ctx) {
       h('div', {}, titulo)),
     h('section', { class: 'cartao fim-jogo' }, resultado, resumo),
     elTimes,
+    elGoleiros,
     h('section', { class: 'cartao rodizio-fila' }, elFila),
     elSelecao,
     elHistorico,
     elAcoes);
   desenhar();
+  desenharGoleirosFixos();
 }
