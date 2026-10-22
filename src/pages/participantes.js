@@ -37,7 +37,7 @@ function camposParticipante({ prefixo, nome = '', nota = NOTA_INICIAL }) {
   };
 }
 
-function editarParticipante(ctx, p) {
+function editarParticipante(ctx, p, mostrarGoleiro = false) {
   return abrirDialogo((fechar) => {
     const campos = camposParticipante({ prefixo: 'editar', nome: p.nome, nota: p.nota });
     campos.inputNome.setAttribute('autofocus', '');
@@ -150,7 +150,7 @@ export async function render(el, { id }, ctx) {
         h('button', {
           class: 'btn-icone', type: 'button', 'aria-label': `Editar ${p.nome}`,
           onClick: async () => {
-            if (await editarParticipante(ctx, p)) { toast('Participante atualizado.'); atualizarLista(); }
+            if (await editarParticipante(ctx, p, configSessao.modalidade === 'futebol')) { toast('Participante atualizado.'); atualizarLista(); }
           },
         }, icone('editar')),
         h('button', {
@@ -176,7 +176,7 @@ export async function render(el, { id }, ctx) {
       return h('li', { class: 'item-participante' },
         h('span', { class: 'ordem', 'aria-hidden': 'true' }, String(i + 1)),
         h('span', { class: 'item-nome' }, p.nome,
-          p.goleiro ? h('span', { class: 'chip chip-ok' }, 'Goleiro') : null,
+          configSessao.modalidade === 'futebol' && p.goleiro ? h('span', { class: 'chip chip-ok' }, 'Goleiro') : null,
           timeDe.has(p.id)
             ? h('span', { class: 'chip-time', style: `--cor-equipe: ${timeDe.get(p.id).cor}` }, timeDe.get(p.id).nome)
             : null,
@@ -190,7 +190,7 @@ export async function render(el, { id }, ctx) {
   if (editavel && configSessao.modo === 'partida') el.append(h('a', { class: 'btn btn-primario btn-grande', href: '#/sessao/' + id + '/times-manuais' }, 'Montar times manualmente'));
 
   if (editavel) {
-    const campos = camposParticipante({ prefixo: 'novo' });
+    const campos = camposParticipante({ prefixo: 'novo', mostrarGoleiro: configSessao.modalidade === 'futebol' });
     const btnAdd = h('button', { class: 'btn btn-primario btn-grande', type: 'submit' }, icone('mais'), 'Adicionar');
     const form = h('form', { class: 'cartao formulario', novalidate: true, 'aria-label': 'Adicionar participante' },
       campos.el, btnAdd);
