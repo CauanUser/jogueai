@@ -20,7 +20,7 @@ const TEXTO_STATUS = {
   confirmada: 'Resultado confirmado',
   cancelada: 'Cancelada',
 };
-const MOTIVO_FIM = { tempo: 'acabou o tempo', gols: 'limite de gols atingido', manual: 'encerrada pelo organizador' };
+const MOTIVO_FIM = { tempo: 'acabou o tempo', gols: 'limite de gols atingido', manual: 'encerrada pelo organizador', sets: 'vitória por sets' };
 
 function resumoRegras(p) {
   const partes = [];
@@ -197,11 +197,13 @@ export async function render(el, { id }, ctx) {
   function cartaoResultado() {
     const p = d.partida;
     const motivo = p.configuracao_extra?.motivo_fim;
-    const v = vencedor(p, placar);
-    const textoVencedor = v === 'empate' ? 'Empate.' : `Vitória do ${equipeDe(v).nome}${p.penaltis_a !== null && placar.a === placar.b ? ' nos pênaltis' : ''}.`;
+    const v = modalidade === 'volei'
+      ? (Number(p.configuracao_extra?.sets_a ?? 0) >= 3 ? 'A' : Number(p.configuracao_extra?.sets_b ?? 0) >= 3 ? 'B' : 'empate')
+      : vencedor(p, placar);
+    const textoVencedor = v === 'empate' ? 'Empate.' : `Vitória do ${equipeDe(v).nome}${modalidade !== 'volei' && p.penaltis_a !== null && placar.a === placar.b ? ' nos pênaltis' : ''}.`;
     const partes = [
       h('h2', {}, p.status === STATUS_PARTIDA.CONFIRMADA ? 'Resultado confirmado' : 'Fim de jogo'),
-      h('p', { class: 'resultado-linha' }, `${d.equipeA.nome} ${placar.a} × ${placar.b} ${d.equipeB.nome}${motivo ? ` — ${MOTIVO_FIM[motivo] ?? motivo}` : ''}.`),
+      h('p', { class: 'resultado-linha' }, `${d.equipeA.nome} ${placar.a} × ${placar.b} ${d.equipeB.nome}${modalidade === 'volei' ? ` · sets ${Number(p.configuracao_extra?.sets_a ?? 0)} × ${Number(p.configuracao_extra?.sets_b ?? 0)}` : ''}${motivo ? ` — ${MOTIVO_FIM[motivo] ?? motivo}` : ''}.`),
       h('p', { class: 'resultado-vencedor' }, textoVencedor),
       h('p', { class: 'texto-suave' }, `Tempo jogado: ${formatarTempo(p.relogio_acumulado_ms)}.`),
     ];
