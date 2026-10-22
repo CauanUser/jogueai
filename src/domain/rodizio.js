@@ -69,11 +69,18 @@ export function atualizarLadosAposRodizio({ estado, equipeEsquerdaId, equipeDire
  * Mantém o vencedor no mesmo lado físico para a próxima partida.
  * A/B representam os lados fixos da quadra, não a ordem vencedor/perdedor.
  */
-export function equipesProximaPartidaPorLado({ ladoVencedor, equipeVencedoraId, equipePerdedoraId }) {
-  if (!['A', 'B'].includes(ladoVencedor) || !equipeVencedoraId || !equipePerdedoraId || equipeVencedoraId === equipePerdedoraId) {
+export function equipesProximaPartidaPorLado({
+  ladoVencedor, equipeVencedoraId, equipePerdedoraId, equipeEntranteId = null,
+}) {
+  if (!['A', 'B'].includes(ladoVencedor) || !equipeVencedoraId || !equipePerdedoraId ||
+      equipeVencedoraId === equipePerdedoraId ||
+      (equipeEntranteId && [equipeVencedoraId, equipePerdedoraId].includes(equipeEntranteId))) {
     throw new Error('Não foi possível determinar os lados da próxima partida.');
   }
+  // A equipe vencedora continua no lado físico em que jogou. Se outra equipe
+  // entrar na rotação, ela ocupa o lado da equipe perdedora.
+  const equipeDoOutroLado = equipeEntranteId || equipePerdedoraId;
   return ladoVencedor === 'A'
-    ? { equipeAId: equipeVencedoraId, equipeBId: equipePerdedoraId }
-    : { equipeAId: equipePerdedoraId, equipeBId: equipeVencedoraId };
+    ? { equipeAId: equipeVencedoraId, equipeBId: equipeDoOutroLado }
+    : { equipeAId: equipeDoOutroLado, equipeBId: equipeVencedoraId };
 }
