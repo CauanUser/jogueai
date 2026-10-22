@@ -70,19 +70,37 @@ export async function render(el, { id }, ctx) {
     h('option', { value: '1' }, '1 goleiro fixo'),
     h('option', { value: '2' }, '2 goleiros fixos'));
   const elGoleirosEscolha = h('div', { class: 'formulario' });
+  const erroGoleiros = h('p', { class: 'erro-campo', role: 'alert', 'aria-live': 'polite' });
   function desenharGoleiros() {
     const itens = [];
-    const criarSelect = (rotulo, selecionado, aoMudar) => {
+    const criarSelect = (rotulo, selecionado, idsBloqueados, aoMudar) => {
+      const disponiveis = participantes.filter((p) => !idsBloqueados.has(p.id) || p.id === selecionado);
       const sel = h('select', { class: 'campo', 'aria-label': rotulo },
         h('option', { value: '' }, 'Selecione o participante'),
-        ...participantes.map((p) => h('option', { value: p.id }, p.nome)));
+        ...disponiveis.map((p) => h('option', { value: p.id }, p.nome)));
       sel.value = selecionado;
       sel.addEventListener('change', () => aoMudar(sel.value));
       return h('label', { class: 'rotulo-campo' }, rotulo, sel);
     };
-    if (estado.quantidadeGoleirosFixos >= 1) itens.push(criarSelect('Goleiro fixo · lado esquerdo', estado.goleiroEsquerdoId, (v) => { estado.goleiroEsquerdoId = v; }));
-    if (estado.quantidadeGoleirosFixos === 2) itens.push(criarSelect('Goleiro fixo · lado direito', estado.goleiroDireitoId, (v) => { estado.goleiroDireitoId = v; }));
-    elGoleirosEscolha.replaceChildren(...itens);
+    if (estado.quantidadeGoleirosFixos >= 1) {
+      itens.push(criarSelect('Goleiro fixo · lado esquerdo', estado.goleiroEsquerdoId,
+        new Set(estado.quantidadeGoleirosFixos === 2 && estado.goleiroDireitoId ? [estado.goleiroDireitoId] : []),
+        (v) => {
+          estado.goleiroEsquerdoId = v;
+          erroGoleiros.textContent = '';
+          desenharGoleiros();
+        }));
+    }
+    if (estado.quantidadeGoleirosFixos === 2) {
+      itens.push(criarSelect('Goleiro fixo · lado direito', estado.goleiroDireitoId,
+        new Set(estado.goleiroEsquerdoId ? [estado.goleiroEsquerdoId] : []),
+        (v) => {
+          estado.goleiroDireitoId = v;
+          erroGoleiros.textContent = '';
+          desenharGoleiros();
+        }));
+    }
+    elGoleirosEscolha.replaceChildren(...itens, erroGoleiros);
   }
   selQuantidadeGoleiros.value = String(estado.quantidadeGoleirosFixos);
   selQuantidadeGoleiros.addEventListener('change', () => {
@@ -209,10 +227,12 @@ export async function render(el, { id }, ctx) {
     }
     try {
       if (estado.quantidadeGoleirosFixos >= 1 && !participantes.some((p) => p.id === estado.goleiroEsquerdoId)) {
+        erroGoleiros.textContent = 'Escolha o goleiro fixo do lado esquerdo.';
         toast('Escolha o goleiro fixo do lado esquerdo.', 'erro');
         return;
       }
       if (estado.quantidadeGoleirosFixos === 2 && (!participantes.some((p) => p.id === estado.goleiroDireitoId) || estado.goleiroDireitoId === estado.goleiroEsquerdoId)) {
+        erroGoleiros.textContent = 'Escolha um goleiro válido e diferente para o lado direito.';
         toast('Escolha um goleiro diferente para o lado direito.', 'erro');
         return;
       }
