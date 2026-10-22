@@ -46,6 +46,16 @@ export async function render(el, { id }, ctx) {
     goleiroDireitoId: '',
   };
 
+  // Recupera a configuração salva de goleiros ao voltar para esta tela.
+  const goleirosSalvos = await ctx.store.obterMeta(chaveGoleirosFixos(id));
+  if (goleirosSalvos) {
+    estado.quantidadeGoleirosFixos = [0, 1, 2].includes(goleirosSalvos.quantidade) ? goleirosSalvos.quantidade : 0;
+    estado.goleiroEsquerdoId = participantes.some((p) => p.id === goleirosSalvos.goleiroEsquerdoId) ? goleirosSalvos.goleiroEsquerdoId : '';
+    estado.goleiroDireitoId = participantes.some((p) => p.id === goleirosSalvos.goleiroDireitoId) ? goleirosSalvos.goleiroDireitoId : '';
+    if (estado.quantidadeGoleirosFixos >= 1 && !estado.goleiroEsquerdoId) estado.quantidadeGoleirosFixos = 0;
+    if (estado.quantidadeGoleirosFixos === 2 && (!estado.goleiroDireitoId || estado.goleiroDireitoId === estado.goleiroEsquerdoId)) estado.quantidadeGoleirosFixos = 1;
+  }
+
   // Recupera um rascunho (sorteio feito e ainda não confirmado).
   const rascunho = await ctx.store.obterMeta(chaveRascunho(id));
   if (rascunho && rascunho.assinatura === assinatura(participantes)) Object.assign(estado, rascunho.estado);
