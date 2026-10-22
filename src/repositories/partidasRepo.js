@@ -22,7 +22,7 @@ const CAMPOS_PARTIDA = [
 export const payloadPartida = (p) => Object.fromEntries(CAMPOS_PARTIDA.map((c) => [c, p[c] ?? null]));
 export const payloadGol = (g) => ({
   id: g.id, sessao_id: g.sessao_id, partida_id: g.partida_id, equipe_id: g.equipe_id,
-  participante_id: g.participante_id ?? null, tipo: g.tipo, valor: g.valor ?? 1, tempo_partida_segundos: g.tempo_partida_segundos,
+  participante_id: g.participante_id ?? null, tipo: g.tipo, valor: g.valor ?? 1, set_numero: g.set_numero ?? 1, tempo_partida_segundos: g.tempo_partida_segundos,
   ocorrido_em: g.ocorrido_em, created_at: g.created_at,
 });
 export const payloadEscalacao = (e) => ({
