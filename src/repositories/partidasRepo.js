@@ -22,7 +22,7 @@ const CAMPOS_PARTIDA = [
 export const payloadPartida = (p) => Object.fromEntries(CAMPOS_PARTIDA.map((c) => [c, p[c] ?? null]));
 export const payloadGol = (g) => ({
   id: g.id, sessao_id: g.sessao_id, partida_id: g.partida_id, equipe_id: g.equipe_id,
-  participante_id: g.participante_id ?? null, tipo: g.tipo, tempo_partida_segundos: g.tempo_partida_segundos,
+  participante_id: g.participante_id ?? null, tipo: g.tipo, valor: g.valor ?? 1, tempo_partida_segundos: g.tempo_partida_segundos,
   ocorrido_em: g.ocorrido_em, created_at: g.created_at,
 });
 export const payloadEscalacao = (e) => ({
@@ -268,7 +268,7 @@ export function criarPartidasRepo({ store, aoGravar = () => {} }) {
      * Se o gol atingir o limite, a partida é encerrada na mesma operação.
      * @returns {Promise<{gol, partida, encerrou: boolean}>}
      */
-    registrarGol(id, { lado, participanteId = null, tipo = TIPO_GOL.NORMAL }, agora = Date.now()) {
+    registrarGol(id, { lado, participanteId = null, tipo = TIPO_GOL.NORMAL, valor = 1 }, agora = Date.now()) {
       return emSerie(id, async () => {
         const p = await store.obter(STORES.PARTIDAS, id);
         if (!p) throw new ErroDeNegocio('Partida não encontrada.');
@@ -282,6 +282,7 @@ export function criarPartidasRepo({ store, aoGravar = () => {} }) {
           equipe_id: equipeDoLado(p, lado),
           participante_id: participanteId || null,
           tipo,
+          valor: Number(valor) || 1,
           tempo_partida_segundos: Math.min(86400, Math.floor(decorridoMs(relogioDaPartida(p), agora) / 1000)),
           ocorrido_em: momento,
           created_at: momento,
