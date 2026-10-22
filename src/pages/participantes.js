@@ -176,6 +176,7 @@ export async function render(el, { id }, ctx) {
       return h('li', { class: 'item-participante' },
         h('span', { class: 'ordem', 'aria-hidden': 'true' }, String(i + 1)),
         h('span', { class: 'item-nome' }, p.nome,
+          p.goleiro ? h('span', { class: 'chip chip-ok' }, 'Goleiro') : null,
           timeDe.has(p.id)
             ? h('span', { class: 'chip-time', style: `--cor-equipe: ${timeDe.get(p.id).cor}` }, timeDe.get(p.id).nome)
             : null,
@@ -201,6 +202,8 @@ export async function render(el, { id }, ctx) {
           campos.mostrarErros({});
           campos.inputNome.value = '';
           campos.seletor.definir(NOTA_INICIAL);
+          const checkGoleiro = form.querySelector(`#novo-goleiro`);
+          if (checkGoleiro) checkGoleiro.checked = false;
           campos.inputNome.focus();
           toast(`${p.nome} adicionado(a).`);
           await atualizarLista();
