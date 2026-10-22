@@ -50,6 +50,7 @@ export function validarGol(p, escalacoes, { lado, participanteId = null, tipo = 
 
 /** Empate no tempo normal que precisa (e pode) ir para os pênaltis? */
 export function precisaPenaltis(p, pl) {
+  if ((p?.configuracao_extra?.modalidade ?? 'futebol') === 'volei') return false;
   return p.desempate === 'penaltis' && pl.a === pl.b;
 }
 
@@ -73,6 +74,10 @@ export function pendenciaParaConfirmar(p, pl) {
 
 /** Vencedor: 'A' | 'B' | 'empate', considerando os pênaltis quando houver. */
 export function vencedor(p, pl) {
+  if ((p?.configuracao_extra?.modalidade ?? 'futebol') === 'volei') {
+    if (pl.a !== pl.b) return pl.a > pl.b ? 'A' : 'B';
+    return 'empate';
+  }
   if (pl.a !== pl.b) return pl.a > pl.b ? 'A' : 'B';
   if (p.penaltis_a !== null && p.penaltis_a !== undefined && p.penaltis_a !== p.penaltis_b) {
     return p.penaltis_a > p.penaltis_b ? 'A' : 'B';
