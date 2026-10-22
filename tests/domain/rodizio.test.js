@@ -5,6 +5,7 @@ import {
   validarConfiguracaoGoleiros,
   criarEstadoLados,
   atualizarLadosAposRodizio,
+  equipesProximaPartidaPorLado,
 } from '../../src/domain/rodizio.js';
 
 const jogador = (id, nome = id) => ({ id, nome });
@@ -61,5 +62,26 @@ describe('goleiros fixos por lado físico', () => {
     });
     expect(depois.esquerda).toEqual({ equipeId: 'C', goleiroId: 'g1' });
     expect(depois.direita).toEqual({ equipeId: 'A', goleiroId: 'g2' });
+  });
+});
+
+
+describe('ordem física da próxima partida', () => {
+  it('mantém o vencedor no lado A quando venceu no lado A', () => {
+    expect(equipesProximaPartidaPorLado({
+      ladoVencedor: 'A', equipeVencedoraId: 'time-a', equipePerdedoraId: 'time-b',
+    })).toEqual({ equipeAId: 'time-a', equipeBId: 'time-b' });
+  });
+
+  it('mantém o vencedor no lado B quando venceu no lado B', () => {
+    expect(equipesProximaPartidaPorLado({
+      ladoVencedor: 'B', equipeVencedoraId: 'time-b', equipePerdedoraId: 'time-a',
+    })).toEqual({ equipeAId: 'time-a', equipeBId: 'time-b' });
+  });
+
+  it('rejeita dados insuficientes para preservar os lados', () => {
+    expect(() => equipesProximaPartidaPorLado({
+      ladoVencedor: 'empate', equipeVencedoraId: 'a', equipePerdedoraId: 'b',
+    })).toThrow(/determinar os lados/);
   });
 });
