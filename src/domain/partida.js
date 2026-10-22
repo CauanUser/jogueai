@@ -124,8 +124,6 @@ export function situacaoTempo(p, agora) {
  */
 export function avaliarEventoAutomatico(p, { agora, placarA = 0, placarB = 0 }) {
   if (p.status !== STATUS_PARTIDA.EM_ANDAMENTO && p.status !== STATUS_PARTIDA.PAUSADA) return null;
-  // O vôlei é encerrado pela regra de sets, nunca pelo relógio ou por um limite de pontos genérico.
-  if (p.configuracao_extra?.modalidade === 'volei') return null;
   const relogio = relogioDaPartida(p);
 
   if (terminaPorGols(p) && (placarA >= p.limite_gols || placarB >= p.limite_gols)) {
