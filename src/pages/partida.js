@@ -88,7 +88,6 @@ export async function render(el, { id }, ctx) {
   const recarregar = async () => {
     d = await ctx.partidas.detalhar(id);
     gols = await ctx.partidas.gols(id);
-    if (modalidade === 'volei') gols = gols.filter((g) => Number(g.set_numero ?? 1) === Number(d.partida.configuracao_extra?.set_atual ?? 1));
     placar = await ctx.partidas.placar(id);
   };
   const redesenhar = () => { desenharControles(); desenharGols(); atualizar(); };
