@@ -20,10 +20,10 @@ const TEXTO_STATUS = {
   confirmada: 'Resultado confirmado',
   cancelada: 'Cancelada',
 };
-const MOTIVO_FIM = { tempo: 'tempo encerrado', gols: 'alvo de pontuação atingido', manual: 'encerrada pelo organizador', sets: 'vitória por sets' };
+const MOTIVO_FIM = { tempo: 'tempo encerrado', gols: 'meta de pontuação atingida', manual: 'encerrada pelo organizador' };
 
 function resumoRegras(p) {
-  if (p.configuracao_extra?.modalidade === 'volei') return 'Vôlei · melhor de 5 sets · 25 pontos (set decisivo a 15) · vantagem de 2';
+  if (p.configuracao_extra?.modalidade === 'volei') return `Vôlei · meta de ${p.limite_gols} pontos · sem cronômetro`;
   const partes = [];
   if (p.condicao_encerramento !== CONDICOES.GOLS) partes.push(formatarTempo(p.duracao_segundos * 1000));
   const unidade = p.configuracao_extra?.modalidade === 'futebol' ? 'gols' : 'pontos';
@@ -115,7 +115,7 @@ export async function render(el, { id }, ctx) {
   async function marcarGol(ladoGol, b, valor = 1) {
     // No futebol registra autor/gol; nos demais esportes registra o valor do ponto.
     const momento = Date.now();
-    const setAntes = Number(d.partida.configuracao_extra?.set_atual ?? 1);
+
     let r = { participanteId: null, tipo: 'normal', valor };
     if (modalidade === 'futebol') {
       r = await perguntarAutor({ equipe: equipeDe(ladoGol), doTime: jogadoresDe(ladoGol), adversarios: jogadoresDe(outroLado(ladoGol)) });
@@ -132,9 +132,6 @@ export async function render(el, { id }, ctx) {
         if (res.encerrou) {
           apitar();
           toast(`${modalidade === 'futebol' ? 'Gol' : modalidade === 'basquete' ? 'Pontuação' : 'Ponto'}${autor ? ` de ${autor}` : ''}! Fim de partida.`, 'info', 5000);
-        } else if (modalidade === 'volei' && Number(d.partida.configuracao_extra?.set_atual ?? 1) !== setAntes) {
-          const extra = d.partida.configuracao_extra ?? {};
-          toast(`Set ${setAntes} vencido por ${equipeDe(ladoGol).nome}! Sets: ${Number(extra.sets_a ?? 0)} × ${Number(extra.sets_b ?? 0)}. Começou o set ${extra.set_atual}.`, 'info', 5000);
         } else {
           toast(`${modalidade === 'futebol' ? 'Gol' : modalidade === 'basquete' ? 'Cesta/ponto' : 'Ponto'} ${equipeDe(ladoGol).nome}${autor ? ` — ${autor}${r.tipo === 'contra' ? ' (contra)' : ''}` : ''}${modalidade === 'basquete' ? ` (+${valor})` : ''}. ${placar.a} × ${placar.b}`, 'info');
         }
@@ -170,7 +167,7 @@ export async function render(el, { id }, ctx) {
       const equipe = g.equipe_id === d.partida.equipe_a_id ? d.equipeA : d.equipeB;
       const autor = g.participante_id ? (nomes.get(g.participante_id) ?? 'Jogador') : (modalidade === 'basquete' ? (Number(g.valor) === 1 ? 'Lance livre' : `Cesta de ${g.valor} pontos`) : modalidade === 'volei' ? 'Ponto' : 'Gol sem autor');
       const conteudo = [
-        h('span', { class: 'gol-minuto' }, modalidade === 'volei' ? `${Number(g.set_numero ?? 1)}º set` : minutoDoGol(g.tempo_partida_segundos)),
+        h('span', { class: 'gol-minuto' }, modalidade === 'volei' ? 'Ponto' : minutoDoGol(g.tempo_partida_segundos)),
         h('span', { class: 'equipe-cor', 'aria-hidden': 'true' }),
         h('span', { class: 'gol-texto' },
           h('strong', {}, autor), g.tipo === 'contra' ? h('span', { class: 'chip chip-alerta' }, 'contra') : null,
@@ -183,7 +180,7 @@ export async function render(el, { id }, ctx) {
     });
     elGols.hidden = gols.length === 0;
     elGols.replaceChildren(
-      h('h2', { id: 'tit-gols' }, modalidade === 'futebol' ? 'Gols da partida' : modalidade === 'basquete' ? 'Cestas e pontuação' : 'Pontos do set atual'),
+      h('h2', { id: 'tit-gols' }, modalidade === 'futebol' ? 'Gols da partida' : modalidade === 'basquete' ? 'Cestas e pontuação' : 'Pontos da partida'),
       editavel && modalidade === 'futebol' ? h('p', { class: 'ajuda' }, 'Toque em um gol para corrigir o autor, marcar como gol contra ou remover.') : modalidade !== 'futebol' ? h('p', { class: 'ajuda' }, 'Cada lançamento soma automaticamente o valor indicado ao placar da equipe.') : null,
       h('ol', { class: 'lista lista-gols' }, itens));
 
@@ -203,15 +200,13 @@ export async function render(el, { id }, ctx) {
   function cartaoResultado() {
     const p = d.partida;
     const motivo = p.configuracao_extra?.motivo_fim;
-    const v = modalidade === 'volei'
-      ? (Number(p.configuracao_extra?.sets_a ?? 0) >= 3 ? 'A' : Number(p.configuracao_extra?.sets_b ?? 0) >= 3 ? 'B' : 'empate')
-      : vencedor(p, placar);
+    const v = vencedor(p, placar);
     const textoVencedor = v === 'empate' ? 'Empate.' : `Vitória do ${equipeDe(v).nome}${modalidade !== 'volei' && p.penaltis_a !== null && placar.a === placar.b ? ' nos pênaltis' : ''}.`;
     const partes = [
       h('h2', {}, p.status === STATUS_PARTIDA.CONFIRMADA ? 'Resultado confirmado' : 'Fim de jogo'),
-      h('p', { class: 'resultado-linha' }, `${d.equipeA.nome} ${placar.a} × ${placar.b} ${d.equipeB.nome}${modalidade === 'volei' ? ` · sets ${Number(p.configuracao_extra?.sets_a ?? 0)} × ${Number(p.configuracao_extra?.sets_b ?? 0)}` : ''}${motivo ? ` — ${MOTIVO_FIM[motivo] ?? motivo}` : ''}.`),
+      h('p', { class: 'resultado-linha' }, `${d.equipeA.nome} ${placar.a} × ${placar.b} ${d.equipeB.nome}${motivo ? ` — ${MOTIVO_FIM[motivo] ?? motivo}` : ''}.`),
       h('p', { class: 'resultado-vencedor' }, textoVencedor),
-      h('p', { class: 'texto-suave' }, `Tempo jogado: ${formatarTempo(p.relogio_acumulado_ms)}.`),
+      modalidade !== 'volei' ? h('p', { class: 'texto-suave' }, `Tempo jogado: ${formatarTempo(p.relogio_acumulado_ms)}.`) : null,
     ];
 
     if (p.status === STATUS_PARTIDA.FINALIZADA) {
@@ -285,7 +280,7 @@ export async function render(el, { id }, ctx) {
       if (modalidade !== 'volei' && p.condicao_encerramento !== CONDICOES.GOLS) {
         itens.push(botao('+1 min de acréscimo', 'btn-secundario', (b) => executar(b, () => ctx.partidas.adicionarAcrescimo(id, 60), '1 minuto de acréscimo adicionado.')));
       }
-      if (p.status !== STATUS_PARTIDA.CONFIGURADA && modalidade !== 'volei') {
+      if (p.status !== STATUS_PARTIDA.CONFIGURADA) {
         itens.push(botao('Encerrar partida', 'btn-secundario', async (b) => {
           const ok = await confirmar({ titulo: 'Encerrar a partida agora?', mensagem: `O cronômetro para e o placar atual (${placar.a} × ${placar.b}) fica como resultado.`, textoConfirmar: 'Encerrar' });
           if (ok) executar(b, () => ctx.partidas.finalizar(id));
@@ -325,7 +320,7 @@ export async function render(el, { id }, ctx) {
       elFim.replaceChildren();
     }
 
-    if (p.status === STATUS_PARTIDA.EM_ANDAMENTO) telaAcesa.ativar(); else telaAcesa.desativar();
+    if (p.status === STATUS_PARTIDA.EM_ANDAMENTO && modalidade !== 'volei') telaAcesa.ativar(); else telaAcesa.desativar();
   }
 
   // ---- Atualização do cronômetro ---------------------------------------
@@ -337,8 +332,8 @@ export async function render(el, { id }, ctx) {
     elPenaltisPlacar.textContent = p.penaltis_a !== null && p.penaltis_a !== undefined ? `pênaltis ${p.penaltis_a} × ${p.penaltis_b}` : '';
     elTempo.hidden = modalidade === 'volei';
     elRotuloTempo.hidden = modalidade === 'volei';
-    elSets.hidden = modalidade !== 'volei';
-    elSets.textContent = modalidade === 'volei' ? `Sets: ${Number(p.configuracao_extra?.sets_a ?? 0)} × ${Number(p.configuracao_extra?.sets_b ?? 0)} · Set ${Number(p.configuracao_extra?.set_atual ?? 1)}` : '';
+    elSets.hidden = true;
+    elSets.textContent = '';
     if (s.porTempo) {
       elTempo.textContent = formatarRestante(s.restanteMs);
       elRotuloTempo.textContent = p.acrescimos_segundos
