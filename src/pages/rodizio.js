@@ -1,6 +1,7 @@
 import { h, icone, comBotaoOcupado } from '../components/dom.js';
 import { confirmar } from '../components/dialogo.js';
 import { toast } from '../components/toast.js';
+import { equipesProximaPartidaPorLado } from '../domain/rodizio.js';
 
 export async function render(el, { id, partidaId }, ctx) {
   let estado;
@@ -27,8 +28,11 @@ export async function render(el, { id, partidaId }, ctx) {
   const nomeEquipeB = estado.atual.equipes.find((e) => e.id === estado.partida.equipe_b_id)?.nome ?? 'Time B';
   // Preserve the A/B physical-side order when preparing the next match.
   // The winning team may be A or B; always putting the winner first would swap sides.
-  const proximaEquipeAId = estado.ladoVencedor === 'A' ? estado.equipeVencedora.id : estado.equipePerdedora.id;
-  const proximaEquipeBId = estado.ladoVencedor === 'B' ? estado.equipeVencedora.id : estado.equipePerdedora.id;
+  const { equipeAId: proximaEquipeAId, equipeBId: proximaEquipeBId } = equipesProximaPartidaPorLado({
+    ladoVencedor: estado.ladoVencedor,
+    equipeVencedoraId: estado.equipeVencedora.id,
+    equipePerdedoraId: estado.equipePerdedora.id,
+  });
   const resultado = h('p', { class: 'resultado-linha' },
     `Partida nº ${estado.partida.numero}: ${nomeEquipeA} ${estado.placar.a} × ${estado.placar.b} ${nomeEquipeB}. ${estado.equipeVencedora.nome} venceu.`,
     estado.partida.penaltis_a !== null && estado.partida.penaltis_a !== undefined
