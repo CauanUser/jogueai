@@ -92,11 +92,11 @@ export async function render(el, { id }, ctx) {
     }, `${m} min`)));
 
   const stGols = stepper({
-    id: 'gols', rotulo: modalidade === 'volei' ? 'Pontos para vencer o set' : 'Limite de gols/pontos', valor: cfg.limite_gols ?? (modalidade === 'basquete' ? 0 : 2), min: 1, max: modalidade === 'volei' ? 50 : 99,
+    id: 'alvo-pontuacao', rotulo: modalidade === 'futebol' ? 'Gols necessários para encerrar' : 'Pontos necessários para encerrar', valor: cfg.limite_gols ?? (modalidade === 'basquete' ? 21 : 2), min: 1, max: 999,
     aoMudar: (v) => { cfg.limite_gols = v; },
   });
   const blocoGols = h('div', {}, stGols.el);
-  if (modalidade === 'basquete') blocoGols.hidden = true;
+  if (modalidade === 'volei') blocoGols.hidden = true;
 
   const radio = (nome, valor, texto, atualValor, aoEscolher) => {
     const inp = h('input', { type: 'radio', name: nome, value: valor, id: `${nome}-${valor}` });
@@ -104,10 +104,10 @@ export async function render(el, { id }, ctx) {
     inp.addEventListener('change', () => aoEscolher(valor));
     return h('label', { class: 'opcao-radio', for: `${nome}-${valor}` }, inp, h('span', {}, h('strong', {}, texto)));
   };
-  const atualizarGols = () => { blocoGols.hidden = cfg.condicao_encerramento === CONDICOES.TEMPO; };
+  const atualizarGols = () => { blocoGols.hidden = modalidade === 'volei' || cfg.condicao_encerramento === CONDICOES.TEMPO; };
   const escolherCondicao = (v) => {
     cfg.condicao_encerramento = v;
-    if (v !== CONDICOES.TEMPO && !cfg.limite_gols) { cfg.limite_gols = 2; stGols.definir(2); }
+    if (v !== CONDICOES.TEMPO && !cfg.limite_gols) { cfg.limite_gols = modalidade === 'basquete' ? 21 : 2; stGols.definir(cfg.limite_gols); }
     atualizarGols();
   };
   const condicao = h('fieldset', { class: 'grupo-radio' },
