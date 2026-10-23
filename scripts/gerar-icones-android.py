@@ -1,35 +1,70 @@
 from pathlib import Path
-from PIL import Image, ImageOps, ImageDraw
+from PIL import Image, ImageOps
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / "public" / "IconeAPP.jpeg"
 RES = ROOT / "android" / "app" / "src" / "main" / "res"
 
-NAVY = (2, 26, 38, 255)       # #021A26
-LIME = (188, 249, 94, 255)    # #BCF95E
-WHITE = (255, 255, 255, 255)  # #FFFFFF
+# Paleta oficial do JogueAI.
+NAVY = (2, 26, 38)       # #021A26
+LIME = (188, 249, 94)    # #BCF95E
 
-# Mantém a arte inteira: não recorta as pontas do símbolo.
-original = Image.open(SOURCE).convert("RGBA")
-canvas = Image.new("RGBA", (1024, 1024), NAVY)
-art = ImageOps.contain(original, (790, 790), method=Image.Resampling.LANCZOS)
-canvas.alpha_composite(art, ((1024 - art.width) // 2, (1024 - art.height) // 2))
+# O arquivo-fonte tem 3200 x 3200 px. Trabalhamos em alta resolução e só
+# reduzimos no fim, usando Lanczos, para evitar serrilhado nos tamanhos menores.
+original = Image.open(SOURCE).convert("RGB")
+if original.width < 1024 or original.height < 1024:
+    raise ValueError("IconeAPP.jpeg precisa ter pelo menos 1024 x 1024 px.")
 
-# Ícone de launcher e foreground adaptativo precisam ser gerados juntos.
-# Android usa a zona central segura para aplicar máscaras circulares/arredondadas.
-sizes = {"mdpi": 48, "hdpi": 72, "xhdpi": 96, "xxhdpi": 144, "xxxhdpi": 192}
-for density, size in sizes.items():
+canvas_size = 1024
+art_size = 790
+art = ImageOps.contain(original, (art_size, art_size), method=Image.Resampling.LANCZOS)
+
+# Ícones tradicionais: fundo sólido e arte centralizada.
+canvas = Image.new("RGB", (canvas_size, canvas_size), NAVY)
+canvas.paste(art, ((canvas_size - art.width) // 2, (canvas_size - art.height) // 2))
+
+# Foreground adaptativo: retirar o fundo azul-marinho da imagem JPEG para que
+# o Android aplique sua própria máscara sem transformar o quadrado inteiro
+# em foreground. A transição suave mantém as bordas antialias da marca.
+foreground = art.convert("RGBA")
+pixels = foreground.load()
+for y in range(foreground.height):
+    for x in range(foreground.width):
+        r, g, b, _ = pixels[x, y]
+        distance = max(abs(r - NAVY[0]), abs(g - NAVY[1]), abs(b - NAVY[2]))
+        if distance <= 5:
+            alpha = 0
+        elif distance >= 65:
+            alpha = 255
+        else:
+            alpha = round((distance - 5) * 255 / 60)
+        pixels[x, y] = (r, g, b, alpha)
+
+# O foreground de um ícone adaptativo tem 108 dp. Geramos os cinco recursos
+# com o tamanho correto por densidade (até 432 px em xxxhdpi).
+sizes = {
+    "mdpi": (48, 108),
+    "hdpi": (72, 162),
+    "xhdpi": (96, 216),
+    "xxhdpi": (144, 324),
+    "xxxhdpi": (192, 432),
+}
+
+for density, (icon_size, foreground_size) in sizes.items():
     folder = RES / f"mipmap-{density}"
     folder.mkdir(parents=True, exist_ok=True)
-    icon = canvas.resize((size, size), Image.Resampling.LANCZOS).convert("RGB")
+
+    icon = canvas.resize((icon_size, icon_size), Image.Resampling.LANCZOS)
     icon.save(folder / "ic_launcher.png", optimize=True)
     icon.save(folder / "ic_launcher_round.png", optimize=True)
 
-    # Foreground com transparência e escala segura; fundo fica no recurso adaptativo.
-    foreground = Image.new("RGBA", (1024, 1024), (0, 0, 0, 0))
-    foreground.alpha_composite(art, ((1024 - art.width) // 2, (1024 - art.height) // 2))
-    foreground.resize((size, size), Image.Resampling.LANCZOS).save(
+    # Centraliza a marca em um canvas transparente com margem para as máscaras
+    # circulares, squircle e outras formas usadas por launchers Android.
+    fg_canvas = Image.new("RGBA", (canvas_size, canvas_size), (0, 0, 0, 0))
+    fg_canvas.alpha_composite(foreground, ((canvas_size - foreground.width) // 2,
+                                          (canvas_size - foreground.height) // 2))
+    fg_canvas.resize((foreground_size, foreground_size), Image.Resampling.LANCZOS).save(
         folder / "ic_launcher_foreground.png", optimize=True
     )
 
-print("Ícones do JogueAI preparados com margem segura e fundo #021A26.")
+print("Ícones JogueAI gerados: launcher em 48–192 px e foreground adaptativo em 108–432 px.")
