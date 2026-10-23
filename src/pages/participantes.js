@@ -193,6 +193,7 @@ export async function render(el, { id }, ctx) {
   if (editavel && configSessao.modo === 'partida') el.append(h('a', { class: 'btn btn-primario btn-grande', href: '#/sessao/' + id + '/times-manuais' }, 'Montar times manualmente'));
 
   if (editavel) {
+    el.append(h('a', { class: 'btn btn-secundario btn-grande', href: `#/sessao/${id}/jogadores` }, icone('lista'), 'Adicionar jogadores do banco'));
     const campos = camposParticipante({ prefixo: 'novo', mostrarGoleiro: configSessao.modalidade === 'futebol' });
     const btnAdd = h('button', { class: 'btn btn-primario btn-grande', type: 'submit' }, icone('mais'), 'Adicionar');
     const form = h('form', { class: 'cartao formulario', novalidate: true, 'aria-label': 'Adicionar participante' },
@@ -220,6 +221,7 @@ export async function render(el, { id }, ctx) {
     el.append(h('a', { class: 'btn btn-secundario btn-importar', href: `#/sessao/${id}/importar` },
       icone('lista'), 'Importar lista do WhatsApp'));
   }
+
 
   el.append(h('section', { 'aria-label': 'Lista de participantes' }, resumo, avisoNotas, lista, vazio));
 
