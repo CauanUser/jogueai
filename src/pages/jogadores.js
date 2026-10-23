@@ -74,10 +74,10 @@ export async function render(el, _params, ctx) {
   let nomesParaImportar = [];
   btnPrever.addEventListener('click', () => {
     previa.replaceChildren();
-    const linhas = listaTexto.value.split(/\\r?\\n/).map((linha) =>
+    const linhas = listaTexto.value.split(/\r?\n/).map((linha) =>
       linha.trim()
-        .replace(/^\\s*(?:\\d{1,3}\\s*[.)\\-:]?\\s+|[-*•]\\s*)/, '')
-        .replace(/^\\s+|\\s+$/g, '')
+        .replace(/^\s*(?:\d{1,3}\s*[.)\-:]?\s+|[-*•]\s*)/, '')
+        .replace(/^\s+|\s+$/g, '')
     ).filter(Boolean);
     const ignorarCabecalho = /^(lista do racha|lista de jogadores|jogadores)$/i;
     const vistos = new Set();
@@ -86,7 +86,7 @@ export async function render(el, _params, ctx) {
     let repetidos = 0;
     for (const linha of linhas) {
       if (ignorarCabecalho.test(linha)) continue;
-      const nomeLimpo = linha.replace(/\\s+/g, ' ').trim();
+      const nomeLimpo = linha.replace(/\s+/g, ' ').trim();
       if (!nomeLimpo) continue;
       const chave = nomeLimpo.toLocaleLowerCase('pt-BR');
       if (existentes.has(chave) || vistos.has(chave)) { repetidos++; continue; }
