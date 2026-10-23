@@ -4,7 +4,7 @@
 // na MESMA transação: ou os dois ficam salvos, ou nenhum.
 
 export const NOME_BANCO = 'jogueai';
-export const VERSAO_BANCO = 5;
+export const VERSAO_BANCO = 6;
 
 export const STORES = Object.freeze({
   SESSOES: 'sessoes',
@@ -18,6 +18,7 @@ export const STORES = Object.freeze({
   PARTIDA_ESCALACOES: 'partida_escalacoes',
   GOLS: 'gols',
   RODIZIO: 'rodizio_eventos',
+  JOGADORES: 'jogadores',
 });
 
 // Stores indexados por sessão (criados nas versões 1 a 4 do banco local).
@@ -54,6 +55,9 @@ export function abrirBanco({ nome = NOME_BANCO, idb = globalThis.indexedDB } = {
       }
       if (!db.objectStoreNames.contains(STORES.META)) {
         db.createObjectStore(STORES.META, { keyPath: 'chave' });
+      }
+      if (!db.objectStoreNames.contains(STORES.JOGADORES)) {
+        db.createObjectStore(STORES.JOGADORES, { keyPath: 'id' });
       }
     };
     req.onsuccess = () => resolve(new LocalStore(req.result));
