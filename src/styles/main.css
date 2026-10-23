@@ -617,3 +617,11 @@ body { background:var(--fundo); color:var(--texto); }
 .lista-selecao-jogadores { display: grid; gap: 6px; margin-top: 12px; }
 .selecao-jogador { display: flex; align-items: center; gap: 10px; min-height: 42px; padding: 6px 8px; border-bottom: 1px solid var(--borda); }
 .selecao-jogador input { width: 20px; height: 20px; accent-color: var(--verde); }
+
+
+/* Banco permanente de jogadores */
+.linha-jogador-banco{display:flex;align-items:center;gap:.7rem;width:100%;min-width:0}
+.jogador-banco-info{display:flex;flex:1;flex-direction:column;min-width:0}
+.jogador-banco-info .item-titulo{overflow-wrap:anywhere}
+.linha-jogador-banco input[type="checkbox"]{width:1.2rem;height:1.2rem;flex:0 0 auto;accent-color:var(--verde,#BCF95E)}
+.linha-jogador-banco .btn-icone{flex:0 0 auto}
