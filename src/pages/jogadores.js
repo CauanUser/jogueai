@@ -51,7 +51,76 @@ export async function render(el, _params, ctx) {
       } catch (e) { toast(e.message, 'erro'); }
     });
   });
+
   el.append(form);
+
+  // Importação em lote: aceita listas copiadas do WhatsApp, uma pessoa por linha.
+  const listaTexto = h('textarea', {
+    class: 'campo',
+    rows: '6',
+    placeholder: 'Cole aqui a lista de nomes, um por linha.\nEx.:\n01 - Alisson\n02 - Michel\n03 - Lucas',
+    'aria-label': 'Lista de nomes para importar'
+  });
+  const btnPrever = h('button', { class: 'btn btn-secundario btn-grande', type: 'button' }, 'Conferir lista');
+  const importacao = h('section', { class: 'cartao formulario', 'aria-label': 'Importar lista de jogadores' },
+    h('h2', {}, 'Importar lista de nomes'),
+    h('p', { class: 'texto-suave' }, 'Cole uma lista do WhatsApp ou digite um nome por linha. Números e marcadores no início da linha serão ignorados. Os novos jogadores entram com nível 5, que você pode ajustar depois.'),
+    h('label', { class: 'rotulo-campo' }, 'Lista de jogadores', listaTexto),
+    btnPrever);
+  const previa = h('div', {});
+  importacao.append(previa);
+  el.append(importacao);
+
+  let nomesParaImportar = [];
+  btnPrever.addEventListener('click', () => {
+    previa.replaceChildren();
+    const linhas = listaTexto.value.split(/\r?\n/).map((linha) =>
+      linha.trim()
+        .replace(/^\s*(?:\d{1,3}\s*[.)\-:]?\s+|[-*•]\s*)/, '')
+        .replace(/^\s+|\s+$/g, '')
+    ).filter(Boolean);
+    const ignorarCabecalho = /^(lista do racha|lista de jogadores|jogadores)$/i;
+    const vistos = new Set();
+    const existentes = new Set(jogadores.map((p) => p.nome.trim().toLocaleLowerCase('pt-BR')));
+    nomesParaImportar = [];
+    let repetidos = 0;
+    for (const linha of linhas) {
+      if (ignorarCabecalho.test(linha)) continue;
+      const nomeLimpo = linha.replace(/\s+/g, ' ').trim();
+      if (!nomeLimpo) continue;
+      const chave = nomeLimpo.toLocaleLowerCase('pt-BR');
+      if (existentes.has(chave) || vistos.has(chave)) { repetidos++; continue; }
+      vistos.add(chave);
+      nomesParaImportar.push(nomeLimpo);
+    }
+    if (!linhas.length) {
+      previa.append(h('p', { class: 'ajuda' }, 'Cole pelo menos um nome para conferir.'));
+      return;
+    }
+    previa.append(h('p', { class: 'resumo' }, `${nomesParaImportar.length} novo(s) para importar; ${repetidos} repetido(s) serão ignorados.`));
+    if (!nomesParaImportar.length) {
+      previa.append(h('p', { class: 'ajuda' }, 'Nenhum nome novo encontrado. Confira se os jogadores já estão cadastrados.'));
+      return;
+    }
+    const listaPrevia = h('ul', { class: 'lista' });
+    nomesParaImportar.forEach((nomeNovo) => listaPrevia.append(h('li', { class: 'item-lista' }, nomeNovo)));
+    const btnImportar = h('button', { class: 'btn btn-primario btn-grande', type: 'button' }, `Importar ${nomesParaImportar.length} jogador(es)`);
+    btnImportar.addEventListener('click', () => comBotaoOcupado(btnImportar, async () => {
+      let adicionados = 0;
+      let falhas = 0;
+      for (const nomeNovo of nomesParaImportar) {
+        try {
+          await ctx.jogadores.adicionar({ nome: nomeNovo, nota: 5 });
+          adicionados++;
+        } catch (e) {
+          falhas++;
+        }
+      }
+      toast(`${adicionados} jogador(es) importado(s)${falhas ? `; ${falhas} não puderam ser importados` : ''}.`, falhas ? 'erro' : undefined);
+      ctx.recarregar();
+    }));
+    previa.append(listaPrevia, btnImportar);
+  });
 
   const titulo = h('h2', { class: 'titulo-secao' }, `Jogadores cadastrados (${jogadores.length})`);
   const ajuda = h('p', { class: 'ajuda' }, sessao

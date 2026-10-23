@@ -43,7 +43,7 @@ export async function render(el, _params, ctx) {
     id: 'data', type: 'date', class: 'campo', required: true, value: dataLocalISO(),
     'aria-describedby': 'ajuda-data erro-data',
   });
-  const btn = h('button', { class: 'btn btn-primario btn-grande', type: 'submit' }, 'Criar sessão');
+  const btn = h('button', { class: 'btn btn-primario btn-grande', type: 'submit' }, 'Iniciar sessão');
   const form = h('form', { class: 'cartao formulario', novalidate: true },
     h('h2', {}, 'Esporte'), esportes,
     h('h2', {}, 'Como vai jogar?'), modos,
@@ -60,7 +60,7 @@ export async function render(el, _params, ctx) {
       try {
         const s = await ctx.sessoes.criar({ dataReferencia: data.value });
         await ctx.store.definirMeta('sessao_config_' + s.id, { modalidade, modo });
-        toast('Sessão criada. Adicione os participantes.');
+        toast('Sessão iniciada. Marque quem veio hoje.');
         ctx.navegar(`/sessao/${s.id}`);
       } catch (e) {
         erro.textContent = e.message;

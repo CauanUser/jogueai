@@ -78,6 +78,8 @@ export async function render(el, { id }, ctx) {
   }
   const editavel = participantesEditaveis(sessao);
   const configSessao = await ctx.store.obterMeta('sessao_config_' + id) ?? { modalidade: 'futebol', modo: 'racha' };
+  const bancoJogadores = await ctx.jogadores.listar();
+  const participantesIniciais = await ctx.participantes.listarPorSessao(id);
 
   const cabecalho = h('div', { class: 'cabecalho-pagina' },
     h('a', { class: 'btn-icone', href: '#/', 'aria-label': 'Voltar ao início' }, icone('voltar')),
@@ -190,6 +192,76 @@ export async function render(el, { id }, ctx) {
   }
 
   el.append(cabecalho);
+
+  // Na abertura de uma sessão, a primeira tarefa é marcar quem compareceu.
+  const nomesJaNaSessao = new Set(participantesIniciais.map((p) => p.nome.trim().toLocaleLowerCase('pt-BR')));
+  const selecionadosBanco = new Set();
+  const listaBanco = h('div', { class: 'lista lista-jogadores-banco-presenca' });
+  const btnConfirmarPresenca = h('button', { class: 'btn btn-primario btn-grande', type: 'button', disabled: true }, 'Confirmar presença (0)');
+  const painelBanco = h('section', { class: 'cartao formulario', 'aria-label': 'Selecionar presença do banco de jogadores' },
+    h('h2', {}, 'Quem veio hoje?'),
+    h('p', { class: 'texto-suave' }, 'Marque apenas quem está presente neste racha. Os outros continuam salvos no banco para os próximos domingos.'),
+    bancoJogadores.length ? listaBanco : h('div', { class: 'estado-vazio estado-vazio-compacto' },
+      h('p', {}, 'Seu banco de jogadores está vazio. Cadastre os nomes uma vez para selecioná-los aqui.'),
+      h('a', { class: 'btn btn-secundario', href: '#/jogadores' }, 'Abrir banco de jogadores')),
+    btnConfirmarPresenca);
+  const btnMostrarBanco = h('button', { class: 'btn btn-secundario btn-grande', type: 'button' }, 'Adicionar jogadores do banco');
+  btnMostrarBanco.hidden = participantesIniciais.length === 0;
+  painelBanco.hidden = participantesIniciais.length > 0;
+
+  for (const jogador of bancoJogadores) {
+    const chave = jogador.nome.trim().toLocaleLowerCase('pt-BR');
+    const jaAdicionado = nomesJaNaSessao.has(chave);
+    const check = h('input', { type: 'checkbox', value: jogador.id, disabled: jaAdicionado, 'aria-label': `Marcar presença de ${jogador.nome}` });
+    check.addEventListener('change', () => {
+      if (check.checked) selecionadosBanco.add(jogador.id);
+      else selecionadosBanco.delete(jogador.id);
+      btnConfirmarPresenca.textContent = `Confirmar presença (${selecionadosBanco.size})`;
+      btnConfirmarPresenca.disabled = selecionadosBanco.size === 0;
+    });
+    listaBanco.append(h('label', { class: 'item-lista linha-jogador-banco' },
+      check,
+      h('span', { class: 'jogador-banco-info' },
+        h('span', { class: 'item-titulo' }, jogador.nome),
+        h('span', { class: 'item-sub' }, jaAdicionado ? 'Já está nesta sessão' : `Nível ${jogador.nota}/10`))));
+  }
+
+  btnMostrarBanco.addEventListener('click', () => { painelBanco.hidden = !painelBanco.hidden; });
+  btnConfirmarPresenca.addEventListener('click', () => comBotaoOcupado(btnConfirmarPresenca, async () => {
+    const atuaisBanco = await ctx.participantes.listarPorSessao(id);
+    const nomesAtuais = new Set(atuaisBanco.map((p) => p.nome.trim().toLocaleLowerCase('pt-BR')));
+    let adicionados = 0;
+    let ignorados = 0;
+    for (const jogador of bancoJogadores.filter((j) => selecionadosBanco.has(j.id))) {
+      const chave = jogador.nome.trim().toLocaleLowerCase('pt-BR');
+      if (nomesAtuais.has(chave)) { ignorados++; continue; }
+      try {
+        await ctx.participantes.adicionar(id, { nome: jogador.nome, nota: jogador.nota });
+        nomesAtuais.add(chave);
+        adicionados++;
+      } catch (e) {
+        toast(e.message, 'erro');
+        return;
+      }
+    }
+    selecionadosBanco.clear();
+    listaBanco.querySelectorAll('input[type=checkbox]').forEach((check) => {
+      if (nomesAtuais.has(bancoJogadores.find((j) => j.id === check.value)?.nome.trim().toLocaleLowerCase('pt-BR'))) {
+        check.checked = false;
+        check.disabled = true;
+        const sub = check.closest('label')?.querySelector('.item-sub');
+        if (sub) sub.textContent = 'Já está nesta sessão';
+      }
+    });
+    btnConfirmarPresenca.textContent = 'Confirmar presença (0)';
+    btnConfirmarPresenca.disabled = true;
+    painelBanco.hidden = true;
+    btnMostrarBanco.hidden = false;
+    toast(`${adicionados} presente(s) adicionado(s)${ignorados ? `; ${ignorados} já estavam na sessão` : ''}.`);
+    await atualizarLista();
+  }));
+
+  el.append(btnMostrarBanco, painelBanco);
   if (editavel && configSessao.modo === 'partida') el.append(h('a', { class: 'btn btn-primario btn-grande', href: '#/sessao/' + id + '/times-manuais' }, 'Montar times manualmente'));
 
   if (editavel) {
