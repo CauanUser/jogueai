@@ -18,6 +18,7 @@ export const STORES = Object.freeze({
   PARTIDA_ESCALACOES: 'partida_escalacoes',
   GOLS: 'gols',
   RODIZIO: 'rodizio_eventos',
+  JOGADORES: 'jogadores',
 });
 
 // Stores indexados por sessão (criados nas versões 1 a 4 do banco local).
