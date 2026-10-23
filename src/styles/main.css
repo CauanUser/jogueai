@@ -400,3 +400,10 @@ button.item-gol { cursor: pointer; }
 .rodizio-previa p { margin: 4px 0; font-weight: 700; overflow-wrap: anywhere; }
 .rodizio-fila .lista { margin-top: 8px; }
 .rodizio-equipe .lista { margin: 0; }
+
+
+/* Banco permanente de jogadores ---------------------------------- */
+.linha-jogador-banco { display: flex; align-items: center; gap: .55rem; }
+.jogador-banco-info { display: flex; flex: 1; min-width: 0; flex-direction: column; gap: 2px; }
+.linha-jogador-banco input[type='checkbox'] { width: 24px; height: 24px; accent-color: var(--verde); flex: none; }
+.linha-jogador-banco .btn-icone { flex: none; width: 40px; height: 44px; }
