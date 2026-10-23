@@ -222,6 +222,64 @@ export async function render(el, { id }, ctx) {
       icone('lista'), 'Importar lista do WhatsApp'));
   }
 
+  if (editavel) {
+    const banco = await ctx.jogadores.listar();
+    const jaNaSessao = new Set((await ctx.participantes.listarPorSessao(id)).map((p) => p.nome.trim().toLocaleLowerCase('pt-BR')));
+    const selecionadosBanco = new Set();
+    const listaBanco = h('ul', { class: 'lista', role: 'list' });
+    const resumoBanco = h('p', { class: 'resumo', 'aria-live': 'polite' });
+    const btnTodosBanco = h('button', { class: 'btn btn-secundario', type: 'button' }, 'Selecionar todos');
+    const btnAdicionarBanco = h('button', { class: 'btn btn-primario btn-grande', type: 'button', disabled: true }, 'Adicionar selecionados');
+    const disponiveis = banco.filter((p) => !jaNaSessao.has(p.nome.trim().toLocaleLowerCase('pt-BR')));
+    function atualizarSelecaoBanco() {
+      resumoBanco.textContent = `${selecionadosBanco.size} selecionado(s)`;
+      btnAdicionarBanco.textContent = `Adicionar ${selecionadosBanco.size} à sessão`;
+      btnAdicionarBanco.disabled = selecionadosBanco.size === 0;
+      btnTodosBanco.textContent = selecionadosBanco.size === disponiveis.length && disponiveis.length ? 'Desmarcar todos' : 'Selecionar todos';
+    }
+    btnTodosBanco.addEventListener('click', () => {
+      if (selecionadosBanco.size === disponiveis.length) selecionadosBanco.clear();
+      else disponiveis.forEach((p) => selecionadosBanco.add(p.id));
+      listaBanco.querySelectorAll('input[type="checkbox"]').forEach((c) => { c.checked = selecionadosBanco.has(c.value); });
+      atualizarSelecaoBanco();
+    });
+    btnAdicionarBanco.addEventListener('click', () => comBotaoOcupado(btnAdicionarBanco, async () => {
+      let adicionados = 0;
+      for (const p of disponiveis.filter((j) => selecionadosBanco.has(j.id))) {
+        try {
+          await ctx.participantes.adicionar(id, { nome: p.nome, nota: p.nota });
+          adicionados++;
+        } catch (e) { toast(e.message, 'erro'); return; }
+      }
+      toast(`${adicionados} jogador(es) adicionado(s) à sessão.`);
+      await atualizarLista();
+      ctx.recarregar();
+    }));
+    for (const p of banco) {
+      const jaAdicionado = jaNaSessao.has(p.nome.trim().toLocaleLowerCase('pt-BR'));
+      const check = h('input', { type: 'checkbox', value: p.id, disabled: jaAdicionado, 'aria-label': `Selecionar ${p.nome}` });
+      check.addEventListener('change', () => {
+        if (check.checked) selecionadosBanco.add(p.id);
+        else selecionadosBanco.delete(p.id);
+        atualizarSelecaoBanco();
+      });
+      listaBanco.append(h('li', { class: 'item-lista' },
+        h('div', { class: 'linha-jogador-banco' },
+          check,
+          h('div', { class: 'jogador-banco-info' },
+            h('span', { class: 'item-titulo' }, p.nome),
+            h('span', { class: 'item-sub' }, jaAdicionado ? 'Já está nesta sessão' : `Nível ${p.nota}/10`)))));
+    }
+    if (!banco.length) listaBanco.append(h('li', { class: 'estado-vazio estado-vazio-compacto' },
+      'Seu banco ainda está vazio. Cadastre jogadores no início do app.'));
+    el.append(h('section', { class: 'cartao formulario', 'aria-label': 'Adicionar jogadores do banco à sessão' },
+      h('h2', {}, 'Adicionar do banco de jogadores'),
+      h('p', { class: 'texto-suave' }, 'Marque quem veio hoje e adicione direto à sessão, sem sair desta tela.'),
+      banco.length ? h('div', { class: 'acoes acoes-coluna' }, btnTodosBanco, resumoBanco, btnAdicionarBanco) : null,
+      listaBanco));
+    atualizarSelecaoBanco();
+  }
+
   el.append(h('section', { 'aria-label': 'Lista de participantes' }, resumo, avisoNotas, lista, vazio));
 
   // Próximo passo: sorteio / times
