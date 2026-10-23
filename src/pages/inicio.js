@@ -27,6 +27,11 @@ export async function render(el, _params, ctx) {
     h('h1', {}, 'JogueAI'),
     h('p', { class: 'slogan' }, 'Times equilibrados. Jogos melhores.')));
 
+  el.append(h('section', { class: 'cartao' },
+    h('h2', {}, 'Banco de jogadores'),
+    h('p', {}, 'Salve os nomes e níveis para os próximos rachas.'),
+    h('a', { class: 'btn btn-secundario btn-grande', href: '#/jogadores' }, 'Gerenciar jogadores')));
+
   if (ativa) {
     const n = contagem.get(ativa.id) ?? 0;
     const btnEncerrar = h('button', { class: 'btn btn-secundario', type: 'button' }, 'Encerrar sessão');
