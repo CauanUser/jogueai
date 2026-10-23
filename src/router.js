@@ -12,6 +12,7 @@ import * as jogadores from './pages/jogadores.js';
 
 const ROTAS = [
   { padrao: /^\/$/, pagina: inicio, nav: 'inicio' },
+  { padrao: /^\/jogadores$/, pagina: jogadores, nav: 'inicio' },
   { padrao: /^\/sessao\/nova$/, pagina: novaSessao, nav: 'inicio' },
   { padrao: /^\/sessao\/([0-9a-f-]{36})$/i, pagina: participantes, nav: 'inicio', params: ['id'] },
   { padrao: /^\/sessao\/([0-9a-f-]{36})\/sorteio$/i, pagina: sorteio, nav: 'inicio', params: ['id'] },
