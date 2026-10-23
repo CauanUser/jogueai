@@ -24,13 +24,14 @@ function dialogoEditar(ctx, jogador) {
   }, { rotulo: 'Editar jogador cadastrado' });
 }
 
-export async function render(el, _params, ctx) {
-  const [jogadores, sessao] = await Promise.all([ctx.jogadores.listar(), ctx.sessoes.emAndamento()]);
+export async function render(el, { id }, ctx) {
+  const [jogadores, sessao] = await Promise.all([ctx.jogadores.listar(), id ? ctx.sessoes.obter(id) : ctx.sessoes.emAndamento()]);
+  const retornoSessao = Boolean(id && sessao);
   const selecionados = new Set();
   el.append(h('div', { class: 'cabecalho-pagina' },
-    h('a', { class: 'btn-icone', href: '#/', 'aria-label': 'Voltar ao início' }, icone('voltar')),
-    h('div', {}, h('h1', {}, 'Banco de jogadores'),
-      h('p', { class: 'texto-suave' }, 'Cadastre uma vez; os nomes e níveis ficam salvos neste aparelho.'))));
+    h('a', { class: 'btn-icone', href: retornoSessao ? `#/sessao/${id}` : '#/', 'aria-label': retornoSessao ? 'Voltar à sessão' : 'Voltar ao início' }, icone('voltar')),
+    h('div', {}, h('h1', {}, retornoSessao ? 'Adicionar jogadores' : 'Banco de jogadores'),
+      h('p', { class: 'texto-suave' }, retornoSessao ? 'Selecione quem vai jogar hoje. Os nomes e níveis já estão salvos.' : 'Cadastre uma vez; os nomes e níveis ficam salvos neste aparelho.'))));
 
   const nome = h('input', { class: 'campo', type: 'text', maxlength: '40', required: true, placeholder: 'Nome do jogador', autocomplete: 'off', autocapitalize: 'words' });
   const nota = seletorNota({ valor: 5 });
@@ -55,7 +56,7 @@ export async function render(el, _params, ctx) {
 
   const titulo = h('h2', { class: 'titulo-secao' }, `Jogadores cadastrados (${jogadores.length})`);
   const ajuda = h('p', { class: 'ajuda' }, sessao
-    ? 'Marque quem está presente hoje e adicione à sessão atual.'
+    ? (retornoSessao ? 'Marque os jogadores presentes e adicione-os. Você voltará direto para a sessão para sortear os times.' : 'Marque quem está presente hoje e adicione à sessão atual.')
     : 'Para usar os jogadores em um racha, crie primeiro uma sessão.');
   const lista = h('ul', { class: 'lista' });
   const btnSelecionarTodos = h('button', { class: 'btn btn-secundario', type: 'button' }, 'Selecionar todos');
