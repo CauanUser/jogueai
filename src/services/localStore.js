@@ -4,7 +4,7 @@
 // na MESMA transação: ou os dois ficam salvos, ou nenhum.
 
 export const NOME_BANCO = 'jogueai';
-export const VERSAO_BANCO = 5;
+export const VERSAO_BANCO = 6;
 
 export const STORES = Object.freeze({
   SESSOES: 'sessoes',
