@@ -43,6 +43,7 @@ export async function criarApp() {
     fila,
     sessoes: criarSessoesRepo({ store, aoGravar }),
     participantes: criarParticipantesRepo({ store, aoGravar }),
+    jogadores: criarJogadoresRepo({ store }),
     sorteios,
     partidas,
     rodizio: criarRodizioRepo({ store, sorteios, partidas, aoGravar }),
