@@ -56,6 +56,9 @@ export function abrirBanco({ nome = NOME_BANCO, idb = globalThis.indexedDB } = {
       if (!db.objectStoreNames.contains(STORES.META)) {
         db.createObjectStore(STORES.META, { keyPath: 'chave' });
       }
+      if (!db.objectStoreNames.contains(STORES.JOGADORES)) {
+        db.createObjectStore(STORES.JOGADORES, { keyPath: 'id' });
+      }
     };
     req.onsuccess = () => resolve(new LocalStore(req.result));
     req.onerror = () => reject(req.error);
